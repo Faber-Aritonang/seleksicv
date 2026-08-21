@@ -1,0 +1,10 @@
+# Binary files
+*.AppImage
+
+# Temporary files
+*.tmp
+*.bak
+
+# OS files
+.DS_Store
+Thumbs.db
