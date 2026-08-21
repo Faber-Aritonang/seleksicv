@@ -1,6 +1,7 @@
 /**
  * ============================================================
  * SCREENING CV OTOMATIS — Gmail Intake + Claude Batch API
+ * + Dashboard Analytics untuk Looker Studio
  * ============================================================
  */
 
@@ -17,7 +18,8 @@ function getConfig() {
     DRIVE_FOLDER_NAME: 'CV Kandidat',
     SHEET_KANDIDAT: 'Kandidat',
     SHEET_KRITERIA: 'Kriteria Penilaian',
-    SHEET_HASIL: 'Hasil Screening'
+    SHEET_HASIL: 'Hasil Screening',
+    SHEET_ANALYTICS: 'Analytics Data'
   };
 }
 
@@ -110,7 +112,6 @@ function intakeFromGmail() {
 
 function extractPdfText(fileId) {
   // METODE 1: Coba buka langsung sebagai Google Doc.
-  // Google Drive kadang auto-convert upload ke Google Doc meskipun mimeType PDF.
   try {
     var doc = DocumentApp.openById(fileId);
     var text = doc.getBody().getText();
@@ -123,11 +124,10 @@ function extractPdfText(fileId) {
   }
 
   // METODE 2: Download file lalu OCR dengan mimeType PDF
-  // Retry sampai 3 kali dengan delay bertambah (rate limit handling)
   var file = DriveApp.getFileById(fileId);
   var blob = file.getBlob();
   for (var attempt = 1; attempt <= 3; attempt++) {
-    var delayMs = attempt * 5000; // 5s, 10s, 15s
+    var delayMs = attempt * 5000;
     Logger.log('OCR attempt ' + attempt + '/3, delay ' + (delayMs/1000) + ' detik...');
     Utilities.sleep(delayMs);
     try {
@@ -252,14 +252,15 @@ function buildAndSubmitBatch() {
       + 'Kriteria penilaian untuk posisi ini:\n'
       + criteriaText
       + '\n\nATURAN PENTING:\n'
-      + '1. Nilai HANYA berdasarkan pengalaman kerja, keahlian teknis, pendidikan, dan pencapaian terukur yang relevan dengan kriteria di atas.\n'
-      + '2. ABAIKAN nama, usia, gender, foto, status pernikahan, agama, dan afiliasi yang tidak berkaitan dengan kualifikasi kerja.\n'
+      + '1. Nilai HANYA berdasarkan pengalaman kerja, keahlian teknis, pendidikan, dan pencapaian terukur.\n'
+      + '2. ABAIKAN nama, usia, gender, foto, status pernikahan, agama.\n'
       + '3. Jangan mengarang informasi yang tidak ada di CV.\n'
       + '4. Analisis skill gap: bandingkan keahlian yang terbukti ada di CV dengan tiap kriteria.\n'
-      + '5. Susun 3-5 pertanyaan interview yang SPESIFIK untuk kandidat ini.\n\n'
+      + '5. Susun 3-5 pertanyaan interview yang SPESIFIK.\n'
+      + '6. Ekstrak data terstruktur dari CV untuk keperluan analytics.\n\n'
       + 'RESPONSE HARUS BERUPA JSON SAJA, tanpa teks lain, tanpa markdown fence.\n'
-      + 'Contoh format:\n'
-      + '{"skor_total":75,"skor_per_kriteria":{"Pengalaman relevan":80,"Keahlian teknis":70},"kekuatan":"ringkasan","kekhawatiran":"ringkasan","rekomendasi":"Lanjut ke interview","skill_gap":[{"kriteria":"Pendidikan","status":"Sebagian","catatan":"belum ada bukti S1"}],"pertanyaan_interview":["pertanyaan 1","pertanyaan 2"]}';
+      + 'Format:\n'
+      + '{"skor_total":75,"skor_per_kriteria":{"Pengalaman relevan":80},"kekuatan":"ringkasan","kekhawatiran":"ringkasan","rekomendasi":"Lanjut ke interview","skill_gap":[{"kriteria":"Pendidikan","status":"Sebagian","catatan":"belum ada bukti S1"}],"pertanyaan_interview":["pertanyaan 1","pertanyaan 2"],"data_cv":{"kota_asal":"Jakarta","tahun_pengalaman":5,"pendidikan_terakhir":"S1","jurusan":"Informatika","skills":"Python, SQL, Tableau","tanggal_lahir":"","status_pernikahan":""}}';
 
     requests.push({
       custom_id: k.fileId,
@@ -377,13 +378,23 @@ function retrieveBatchResults(resultsUrl) {
   var statusCol = headers.indexOf('Status');
   var namaCol = headers.indexOf('Nama Pengirim');
   var emailCol = headers.indexOf('Email Pengirim');
+  var subjekCol = headers.indexOf('Subjek');
+  var tanggalCol = headers.indexOf('Tanggal Masuk');
 
   var hasilSheet = getOrCreateSheet(config.SHEET_HASIL, [
     'Nama Kandidat', 'Email', 'Skor Total', 'Kekuatan', 'Kekhawatiran',
     'Rekomendasi', 'Detail Skor', 'Skill Gap', 'Pertanyaan', 'Drive File ID'
   ]);
 
+  // Sheet baru untuk analytics / Looker Studio
+  var analyticsSheet = getOrCreateSheet(config.SHEET_ANALYTICS, [
+    'Tanggal Screening', 'Nama Kandidat', 'Email', 'Subjek Lamaran',
+    'Kota Asal', 'Tahun Pengalaman', 'Pendidikan Terakhir', 'Jurusan',
+    'Skills', 'Skor Total', 'Rekomendasi', 'Drive File ID'
+  ]);
+
   var hasilBaru = [];
+  var analyticsBaru = [];
 
   for (var l = 0; l < lines.length; l++) {
     var line = lines[l];
@@ -399,6 +410,8 @@ function retrieveBatchResults(resultsUrl) {
     }
     var nama = rowIdx >= 0 ? kandidatData[rowIdx][namaCol] : '?';
     var email = rowIdx >= 0 ? kandidatData[rowIdx][emailCol] : '';
+    var subjek = rowIdx >= 0 ? kandidatData[rowIdx][subjekCol] : '';
+    var tanggalMasuk = rowIdx >= 0 ? kandidatData[rowIdx][tanggalCol] : '';
 
     if (entry.result.type !== 'succeeded') {
       Logger.log('Gagal: ' + fileId);
@@ -417,9 +430,7 @@ function retrieveBatchResults(resultsUrl) {
     var penilaian;
     try {
       var rawText = textBlock.text.trim();
-      // Hapus markdown fence jika ada
       var cleaned = rawText.replace(/^```json\n?/gm, '').replace(/^```\n?/gm, '').trim();
-      // Coba ekstrak JSON dari teks (kadang Claude tambah teks di luar JSON)
       var jsonMatch = cleaned.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         cleaned = jsonMatch[0];
@@ -431,6 +442,7 @@ function retrieveBatchResults(resultsUrl) {
       continue;
     }
 
+    // Format skill gap
     var sgArr = penilaian.skill_gap || [];
     var sgText = '';
     for (var s = 0; s < sgArr.length; s++) {
@@ -438,6 +450,7 @@ function retrieveBatchResults(resultsUrl) {
       if (s < sgArr.length - 1) sgText += '\n';
     }
 
+    // Format pertanyaan interview
     var pqArr = penilaian.pertanyaan_interview || [];
     var pqText = '';
     for (var q = 0; q < pqArr.length; q++) {
@@ -445,28 +458,178 @@ function retrieveBatchResults(resultsUrl) {
       if (q < pqArr.length - 1) pqText += '\n';
     }
 
+    // Data untuk sheet Hasil Screening
     hasilBaru.push([
       nama, email, penilaian.skor_total, penilaian.kekuatan,
       penilaian.kekhawatiran, penilaian.rekomendasi,
       JSON.stringify(penilaian.skor_per_kriteria), sgText, pqText, fileId
     ]);
 
+    // Data untuk sheet Analytics (Looker Studio)
+    var dataCV = penilaian.data_cv || {};
+    var today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    analyticsBaru.push([
+      today, nama, email, subjek,
+      dataCV.kota_asal || '-',
+      dataCV.tahun_pengalaman || 0,
+      dataCV.pendidikan_terakhir || '-',
+      dataCV.jurusan || '-',
+      dataCV.skills || '-',
+      penilaian.skor_total,
+      penilaian.rekomendasi,
+      fileId
+    ]);
+
     if (rowIdx >= 0) kandidatSheet.getRange(rowIdx + 1, statusCol + 1).setValue('Selesai');
   }
 
+  // Sort hasil by skor tertinggi
   hasilBaru.sort(function(a, b) { return b[2] - a[2]; });
 
+  // Clear & tulis Hasil Screening
   if (hasilBaru.length > 0 && hasilSheet.getLastRow() > 1) {
     hasilSheet.getRange(2, 1, hasilSheet.getLastRow() - 1, hasilSheet.getLastColumn()).clearContent();
   }
-
   for (var h = 0; h < hasilBaru.length; h++) {
     hasilSheet.appendRow(hasilBaru[h]);
   }
 
-  Logger.log(hasilBaru.length + ' hasil ditambahkan.');
+  // Tulis Analytics Data (append, jangan clear — biar histori terakumulasi)
+  for (var a = 0; a < analyticsBaru.length; a++) {
+    analyticsSheet.appendRow(analyticsBaru[a]);
+  }
+
+  Logger.log(hasilBaru.length + ' hasil screening ditambahkan.');
+  Logger.log(analyticsBaru.length + ' data analytics ditambahkan.');
   return true;
 }
+
+// ============================================================
+// ===== 6. DASHBOARD ANALYTICS (CHART DI SHEETS) =====
+// ============================================================
+
+function generateDashboard() {
+  var config = getConfig();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // --- Dashboard Ringkasan ---
+  var dashSheet = getOrCreateSheet('Dashboard', [
+    'METRIK', 'NILAI'
+  ]);
+
+  // Hapus data lama (keep header)
+  if (dashSheet.getLastRow() > 1) {
+    dashSheet.getRange(2, 1, dashSheet.getLastRow() - 1, dashSheet.getLastColumn()).clearContent();
+  }
+
+  // Ambil data analytics
+  var analyticsSheet = getOrCreateSheet(config.SHEET_ANALYTICS, [
+    'Tanggal Screening', 'Nama Kandidat', 'Email', 'Subjek Lamaran',
+    'Kota Asal', 'Tahun Pengalaman', 'Pendidikan Terakhir', 'Jurusan',
+    'Skills', 'Skor Total', 'Rekomendasi', 'Drive File ID'
+  ]);
+  var data = analyticsSheet.getDataRange().getValues();
+
+  if (data.length <= 1) {
+    Logger.log('Belum ada data analytics. Jalankan checkBatchStatus dulu.');
+    return;
+  }
+
+  // Hitung metrik
+  var totalKandidat = data.length - 1;
+  var skorTotal = 0;
+  var skorMin = 999;
+  var skorMax = 0;
+  var rekomendasiCount = {};
+  var kotaCount = {};
+  var pendidikanCount = {};
+  var skillsCount = {};
+
+  for (var i = 1; i < data.length; i++) {
+    var skor = parseFloat(data[i][9]) || 0;
+    var rekomendasi = data[i][10] || '-';
+    var kota = data[i][4] || '-';
+    var pendidikan = data[i][6] || '-';
+    var skillsStr = data[i][8] || '-';
+
+    skorTotal += skor;
+    if (skor < skorMin) skorMin = skor;
+    if (skor > skorMax) skorMax = skor;
+
+    rekomendasiCount[rekomendasi] = (rekomendasiCount[rekomendasi] || 0) + 1;
+    kotaCount[kota] = (kotaCount[kota] || 0) + 1;
+    pendidikanCount[pendidikan] = (pendidikanCount[pendidikan] || 0) + 1;
+
+    // Parse skills (comma separated)
+    if (skillsStr && skillsStr !== '-') {
+      var skills = skillsStr.split(',');
+      for (var s = 0; s < skills.length; s++) {
+        var skill = skills[s].trim();
+        if (skill) skillsCount[skill] = (skillsCount[skill] || 0) + 1;
+      }
+    }
+  }
+
+  var skorRataRata = (skorTotal / totalKandidat).toFixed(1);
+
+  // Tulis metrik ke Dashboard
+  var metrics = [
+    ['Total Kandidat', totalKandidat],
+    ['Skor Rata-rata', skorRataRata],
+    ['Skor Tertinggi', skorMax],
+    ['Skor Terendah', skorMin],
+    ['', ''],
+    ['--- REKOMENDASI ---', ''],
+    ['Lanjut ke Interview', rekomendasiCount['Lanjut ke interview'] || 0],
+    ['Pertimbangkan', rekomendasiCount['Pertimbangkan'] || 0],
+    ['Tidak Sesuai', rekomendasiCount['Tidak sesuai'] || 0],
+    ['', ''],
+    ['--- TOP 5 KOTA ASAL ---', '']
+  ];
+
+  // Sort kota by count
+  var kotaSorted = Object.keys(kotaCount).sort(function(a, b) {
+    return kotaCount[b] - kotaCount[a];
+  });
+  for (var k = 0; k < Math.min(5, kotaSorted.length); k++) {
+    metrics.push([kotaSorted[k], kotaCount[kotaSorted[k]]]);
+  }
+
+  metrics.push(['', '']);
+  metrics.push(['--- TOP 5 PENDIDIKAN ---', '']);
+
+  var pendSorted = Object.keys(pendidikanCount).sort(function(a, b) {
+    return pendidikanCount[b] - pendidikanCount[a];
+  });
+  for (var p = 0; p < Math.min(5, pendSorted.length); p++) {
+    metrics.push([pendSorted[p], pendidikanCount[pendSorted[p]]]);
+  }
+
+  metrics.push(['', '']);
+  metrics.push(['--- TOP 10 SKILLS ---', '']);
+
+  var skillsSorted = Object.keys(skillsCount).sort(function(a, b) {
+    return skillsCount[b] - skillsCount[a];
+  });
+  for (var sk = 0; sk < Math.min(10, skillsSorted.length); sk++) {
+    metrics.push([skillsSorted[sk], skillsCount[skillsSorted[sk]]]);
+  }
+
+  for (var m = 0; m < metrics.length; m++) {
+    dashSheet.appendRow(metrics[m]);
+  }
+
+  // Format Dashboard
+  dashSheet.setColumnWidth(1, 250);
+  dashSheet.setColumnWidth(2, 150);
+
+  Logger.log('Dashboard berhasil digenerate! Buka sheet "Dashboard" untuk lihat.');
+  Logger.log('Total kandidat: ' + totalKandidat + ', Skor rata-rata: ' + skorRataRata);
+}
+
+// ============================================================
+// ===== 7. NOTIFIKASI TELEGRAM =====
+// ============================================================
 
 function sendTelegramMessage(text) {
   var config = getConfig();
@@ -523,6 +686,10 @@ function testSetup() {
 
   var running = PropertiesService.getScriptProperties().getProperty('CURRENT_BATCH_ID');
   Logger.log('5. Batch berjalan: ' + (running || 'TIDAK'));
+
+  var analyticsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(config.SHEET_ANALYTICS);
+  var totalAnalytics = analyticsSheet ? (analyticsSheet.getLastRow() - 1) : 0;
+  Logger.log('6. Data analytics: ' + totalAnalytics + ' record');
 
   Logger.log('=== SELESAI ===');
 }
