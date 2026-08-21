@@ -1,7 +1,7 @@
 /**
  * ============================================================
  * SCREENING CV OTOMATIS — Gmail Intake + Claude Batch API
- * + Dashboard Analytics untuk Looker Studio
+ * + Dashboard Analytics (auto-chart di Google Sheets)
  * ============================================================
  */
 
@@ -123,7 +123,7 @@ function extractPdfText(fileId) {
     Logger.log('DocumentApp.openById gagal untuk ' + fileId + ': ' + e.message);
   }
 
-  // METODE 2: Download file lalu OCR dengan mimeType PDF
+  // METODE 2: Download file lalu OCR dengan retry
   var file = DriveApp.getFileById(fileId);
   var blob = file.getBlob();
   for (var attempt = 1; attempt <= 3; attempt++) {
@@ -260,7 +260,7 @@ function buildAndSubmitBatch() {
       + '6. Ekstrak data terstruktur dari CV untuk keperluan analytics.\n\n'
       + 'RESPONSE HARUS BERUPA JSON SAJA, tanpa teks lain, tanpa markdown fence.\n'
       + 'Format:\n'
-      + '{"skor_total":75,"skor_per_kriteria":{"Pengalaman relevan":80},"kekuatan":"ringkasan","kekhawatiran":"ringkasan","rekomendasi":"Lanjut ke interview","skill_gap":[{"kriteria":"Pendidikan","status":"Sebagian","catatan":"belum ada bukti S1"}],"pertanyaan_interview":["pertanyaan 1","pertanyaan 2"],"data_cv":{"kota_asal":"Jakarta","tahun_pengalaman":5,"pendidikan_terakhir":"S1","jurusan":"Informatika","skills":"Python, SQL, Tableau","tanggal_lahir":"","status_pernikahan":""}}';
+      + '{"skor_total":75,"skor_per_kriteria":{"Pengalaman relevan":80},"kekuatan":"ringkasan","kekhawatiran":"ringkasan","rekomendasi":"Lanjut ke interview","skill_gap":[{"kriteria":"Pendidikan","status":"Sebagian","catatan":"belum ada bukti S1"}],"pertanyaan_interview":["pertanyaan 1","pertanyaan 2"],"data_cv":{"kota_asal":"Jakarta","tahun_pengalaman":5,"pendidikan_terakhir":"S1","jurusan":"Informatika","skills":"Python, SQL, Tableau"}}';
 
     requests.push({
       custom_id: k.fileId,
@@ -386,7 +386,6 @@ function retrieveBatchResults(resultsUrl) {
     'Rekomendasi', 'Detail Skor', 'Skill Gap', 'Pertanyaan', 'Drive File ID'
   ]);
 
-  // Sheet baru untuk analytics / Looker Studio
   var analyticsSheet = getOrCreateSheet(config.SHEET_ANALYTICS, [
     'Tanggal Screening', 'Nama Kandidat', 'Email', 'Subjek Lamaran',
     'Kota Asal', 'Tahun Pengalaman', 'Pendidikan Terakhir', 'Jurusan',
@@ -411,7 +410,6 @@ function retrieveBatchResults(resultsUrl) {
     var nama = rowIdx >= 0 ? kandidatData[rowIdx][namaCol] : '?';
     var email = rowIdx >= 0 ? kandidatData[rowIdx][emailCol] : '';
     var subjek = rowIdx >= 0 ? kandidatData[rowIdx][subjekCol] : '';
-    var tanggalMasuk = rowIdx >= 0 ? kandidatData[rowIdx][tanggalCol] : '';
 
     if (entry.result.type !== 'succeeded') {
       Logger.log('Gagal: ' + fileId);
@@ -432,9 +430,7 @@ function retrieveBatchResults(resultsUrl) {
       var rawText = textBlock.text.trim();
       var cleaned = rawText.replace(/^```json\n?/gm, '').replace(/^```\n?/gm, '').trim();
       var jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        cleaned = jsonMatch[0];
-      }
+      if (jsonMatch) { cleaned = jsonMatch[0]; }
       penilaian = JSON.parse(cleaned);
     } catch (e) {
       Logger.log('Gagal parse JSON untuk ' + fileId + '. Response: ' + textBlock.text.slice(0, 500));
@@ -442,7 +438,6 @@ function retrieveBatchResults(resultsUrl) {
       continue;
     }
 
-    // Format skill gap
     var sgArr = penilaian.skill_gap || [];
     var sgText = '';
     for (var s = 0; s < sgArr.length; s++) {
@@ -450,7 +445,6 @@ function retrieveBatchResults(resultsUrl) {
       if (s < sgArr.length - 1) sgText += '\n';
     }
 
-    // Format pertanyaan interview
     var pqArr = penilaian.pertanyaan_interview || [];
     var pqText = '';
     for (var q = 0; q < pqArr.length; q++) {
@@ -458,14 +452,12 @@ function retrieveBatchResults(resultsUrl) {
       if (q < pqArr.length - 1) pqText += '\n';
     }
 
-    // Data untuk sheet Hasil Screening
     hasilBaru.push([
       nama, email, penilaian.skor_total, penilaian.kekuatan,
       penilaian.kekhawatiran, penilaian.rekomendasi,
       JSON.stringify(penilaian.skor_per_kriteria), sgText, pqText, fileId
     ]);
 
-    // Data untuk sheet Analytics (Looker Studio)
     var dataCV = penilaian.data_cv || {};
     var today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
     analyticsBaru.push([
@@ -483,10 +475,8 @@ function retrieveBatchResults(resultsUrl) {
     if (rowIdx >= 0) kandidatSheet.getRange(rowIdx + 1, statusCol + 1).setValue('Selesai');
   }
 
-  // Sort hasil by skor tertinggi
   hasilBaru.sort(function(a, b) { return b[2] - a[2]; });
 
-  // Clear & tulis Hasil Screening
   if (hasilBaru.length > 0 && hasilSheet.getLastRow() > 1) {
     hasilSheet.getRange(2, 1, hasilSheet.getLastRow() - 1, hasilSheet.getLastColumn()).clearContent();
   }
@@ -494,63 +484,62 @@ function retrieveBatchResults(resultsUrl) {
     hasilSheet.appendRow(hasilBaru[h]);
   }
 
-  // Tulis Analytics Data (append, jangan clear — biar histori terakumulasi)
   for (var a = 0; a < analyticsBaru.length; a++) {
     analyticsSheet.appendRow(analyticsBaru[a]);
   }
 
   Logger.log(hasilBaru.length + ' hasil screening ditambahkan.');
   Logger.log(analyticsBaru.length + ' data analytics ditambahkan.');
+
+  // Auto-generate dashboard setelah ambil hasil
+  generateDashboard();
+
   return true;
 }
 
 // ============================================================
-// ===== 6. DASHBOARD ANALYTICS (CHART DI SHEETS) =====
+// ===== 6. DASHBOARD ANALYTICS (AUTO-CHART DI SHEETS) =====
 // ============================================================
 
 function generateDashboard() {
   var config = getConfig();
   var ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  // --- Dashboard Ringkasan ---
-  var dashSheet = getOrCreateSheet('Dashboard', [
-    'METRIK', 'NILAI'
-  ]);
-
-  // Hapus data lama (keep header)
-  if (dashSheet.getLastRow() > 1) {
-    dashSheet.getRange(2, 1, dashSheet.getLastRow() - 1, dashSheet.getLastColumn()).clearContent();
+  // --- Hapus sheet Dashboard lama jika ada ---
+  var oldDash = ss.getSheetByName('Dashboard');
+  if (oldDash) {
+    ss.deleteSheet(oldDash);
   }
 
-  // Ambil data analytics
-  var analyticsSheet = getOrCreateSheet(config.SHEET_ANALYTICS, [
-    'Tanggal Screening', 'Nama Kandidat', 'Email', 'Subjek Lamaran',
-    'Kota Asal', 'Tahun Pengalaman', 'Pendidikan Terakhir', 'Jurusan',
-    'Skills', 'Skor Total', 'Rekomendasi', 'Drive File ID'
-  ]);
-  var data = analyticsSheet.getDataRange().getValues();
+  // --- Buat sheet Dashboard baru ---
+  var dashSheet = ss.insertSheet('Dashboard', 0); // posisi paling kiri
 
-  if (data.length <= 1) {
+  // --- Ambil data analytics ---
+  var analyticsSheet = ss.getSheetByName(config.SHEET_ANALYTICS);
+  if (!analyticsSheet || analyticsSheet.getLastRow() <= 1) {
     Logger.log('Belum ada data analytics. Jalankan checkBatchStatus dulu.');
     return;
   }
-
-  // Hitung metrik
+  var data = analyticsSheet.getDataRange().getValues();
   var totalKandidat = data.length - 1;
-  var skorTotal = 0;
-  var skorMin = 999;
-  var skorMax = 0;
+
+  // --- Hitung semua metrik ---
+  var skorTotal = 0, skorMin = 999, skorMax = 0;
   var rekomendasiCount = {};
   var kotaCount = {};
   var pendidikanCount = {};
   var skillsCount = {};
+  var pengalamanCount = {};
+  var jurusanCount = {};
 
   for (var i = 1; i < data.length; i++) {
     var skor = parseFloat(data[i][9]) || 0;
-    var rekomendasi = data[i][10] || '-';
-    var kota = data[i][4] || '-';
-    var pendidikan = data[i][6] || '-';
-    var skillsStr = data[i][8] || '-';
+    var rekomendasi = (data[i][10] || '-').toString();
+    var kota = (data[i][4] || '-').toString();
+    var pendidikan = (data[i][6] || '-').toString();
+    var jurusan = (data[i][7] || '-').toString();
+    var skillsStr = (data[i][8] || '-').toString();
+    var pengalaman = (data[i][5] || 0).toString();
 
     skorTotal += skor;
     if (skor < skorMin) skorMin = skor;
@@ -559,8 +548,9 @@ function generateDashboard() {
     rekomendasiCount[rekomendasi] = (rekomendasiCount[rekomendasi] || 0) + 1;
     kotaCount[kota] = (kotaCount[kota] || 0) + 1;
     pendidikanCount[pendidikan] = (pendidikanCount[pendidikan] || 0) + 1;
+    jurusanCount[jurusan] = (jurusanCount[jurusan] || 0) + 1;
+    pengalamanCount[pengalaman] = (pengalamanCount[pengalaman] || 0) + 1;
 
-    // Parse skills (comma separated)
     if (skillsStr && skillsStr !== '-') {
       var skills = skillsStr.split(',');
       for (var s = 0; s < skills.length; s++) {
@@ -572,59 +562,198 @@ function generateDashboard() {
 
   var skorRataRata = (skorTotal / totalKandidat).toFixed(1);
 
-  // Tulis metrik ke Dashboard
-  var metrics = [
-    ['Total Kandidat', totalKandidat],
-    ['Skor Rata-rata', skorRataRata],
-    ['Skor Tertinggi', skorMax],
-    ['Skor Terendah', skorMin],
-    ['', ''],
-    ['--- REKOMENDASI ---', ''],
-    ['Lanjut ke Interview', rekomendasiCount['Lanjut ke interview'] || 0],
-    ['Pertimbangkan', rekomendasiCount['Pertimbangkan'] || 0],
-    ['Tidak Sesuai', rekomendasiCount['Tidak sesuai'] || 0],
-    ['', ''],
-    ['--- TOP 5 KOTA ASAL ---', '']
-  ];
+  // ============================================================
+  // BAGIAN A: RINGKASAN UMUM (kolom A-B, baris 1-8)
+  // ============================================================
 
-  // Sort kota by count
-  var kotaSorted = Object.keys(kotaCount).sort(function(a, b) {
-    return kotaCount[b] - kotaCount[a];
-  });
-  for (var k = 0; k < Math.min(5, kotaSorted.length); k++) {
-    metrics.push([kotaSorted[k], kotaCount[kotaSorted[k]]]);
-  }
+  dashSheet.getRange('A1').setValue('📊 DASHBOARD SCREENING CV').setFontSize(16).setFontWeight('bold');
+  dashSheet.getRange('A2').setValue('Auto-generated oleh system screening otomatis').setFontStyle('italic').setFontColor('#666666');
 
-  metrics.push(['', '']);
-  metrics.push(['--- TOP 5 PENDIDIKAN ---', '']);
+  dashSheet.getRange('A4').setValue('TOTAL KANDIDAT').setFontWeight('bold');
+  dashSheet.getRange('B4').setValue(totalKandidat).setFontSize(20).setFontWeight('bold').setFontColor('#1a73e8');
 
-  var pendSorted = Object.keys(pendidikanCount).sort(function(a, b) {
-    return pendidikanCount[b] - pendidikanCount[a];
-  });
-  for (var p = 0; p < Math.min(5, pendSorted.length); p++) {
-    metrics.push([pendSorted[p], pendidikanCount[pendSorted[p]]]);
-  }
+  dashSheet.getRange('A5').setValue('SKOR RATA-RATA').setFontWeight('bold');
+  dashSheet.getRange('B5').setValue(parseFloat(skorRataRata)).setFontSize(20).setFontWeight('bold').setFontColor('#34a853');
 
-  metrics.push(['', '']);
-  metrics.push(['--- TOP 10 SKILLS ---', '']);
+  dashSheet.getRange('A6').setValue('SKOR TERTINGGI').setFontWeight('bold');
+  dashSheet.getRange('B6').setValue(skorMax).setFontSize(20).setFontWeight('bold').setFontColor('#ea4335');
 
-  var skillsSorted = Object.keys(skillsCount).sort(function(a, b) {
-    return skillsCount[b] - skillsCount[a];
-  });
-  for (var sk = 0; sk < Math.min(10, skillsSorted.length); sk++) {
-    metrics.push([skillsSorted[sk], skillsCount[skillsSorted[sk]]]);
-  }
+  dashSheet.getRange('A7').setValue('SKOR TERENDAH').setFontWeight('bold');
+  dashSheet.getRange('B7').setValue(skorMin).setFontSize(20).setFontWeight('bold');
 
-  for (var m = 0; m < metrics.length; m++) {
-    dashSheet.appendRow(metrics[m]);
-  }
-
-  // Format Dashboard
-  dashSheet.setColumnWidth(1, 250);
+  dashSheet.setColumnWidth(1, 200);
   dashSheet.setColumnWidth(2, 150);
 
-  Logger.log('Dashboard berhasil digenerate! Buka sheet "Dashboard" untuk lihat.');
+  // ============================================================
+  // BAGIAN B: DATA UNTUK CHART (mulai baris 10)
+  // ============================================================
+
+  // --- Rekomendasi (pie chart) ---
+  var startRow = 10;
+  dashSheet.getRange('A' + startRow).setValue('REKOMENDASI').setFontWeight('bold').setBackground('#e8f0fe');
+  dashSheet.getRange('B' + startRow).setValue('JUMLAH').setFontWeight('bold').setBackground('#e8f0fe');
+  var idx = startRow + 1;
+  var rekomKeys = Object.keys(rekomendasiCount);
+  for (var r = 0; r < rekomKeys.length; r++) {
+    dashSheet.getRange('A' + idx).setValue(rekomKeys[r]);
+    dashSheet.getRange('B' + idx).setValue(rekomendasiCount[rekomKeys[r]]);
+    idx++;
+  }
+  var rekomEndRow = idx - 1;
+
+  // --- Kota Asal (bar chart) ---
+  startRow = rekomEndRow + 3;
+  dashSheet.getRange('A' + startRow).setValue('KOTA ASAL').setFontWeight('bold').setBackground('#fce8e6');
+  dashSheet.getRange('B' + startRow).setValue('JUMLAH').setFontWeight('bold').setBackground('#fce8e6');
+  idx = startRow + 1;
+  var kotaSorted = Object.keys(kotaCount).sort(function(a, b) { return kotaCount[b] - kotaCount[a]; });
+  for (var k = 0; k < kotaSorted.length; k++) {
+    dashSheet.getRange('A' + idx).setValue(kotaSorted[k]);
+    dashSheet.getRange('B' + idx).setValue(kotaCount[kotaSorted[k]]);
+    idx++;
+  }
+  var kotaEndRow = idx - 1;
+
+  // --- Pendidikan (pie chart) ---
+  startRow = kotaEndRow + 3;
+  dashSheet.getRange('A' + startRow).setValue('PENDIDIKAN').setFontWeight('bold').setBackground('#e6f4ea');
+  dashSheet.getRange('B' + startRow).setValue('JUMLAH').setFontWeight('bold').setBackground('#e6f4ea');
+  idx = startRow + 1;
+  var pendSorted = Object.keys(pendidikanCount).sort(function(a, b) { return pendidikanCount[b] - pendidikanCount[a]; });
+  for (var p = 0; p < pendSorted.length; p++) {
+    dashSheet.getRange('A' + idx).setValue(pendSorted[p]);
+    dashSheet.getRange('B' + idx).setValue(pendidikanCount[pendSorted[p]]);
+    idx++;
+  }
+  var pendEndRow = idx - 1;
+
+  // --- Skills (bar chart, top 10) ---
+  startRow = pendEndRow + 3;
+  dashSheet.getRange('A' + startRow).setValue('TOP 10 SKILLS').setFontWeight('bold').setBackground('#fef7e0');
+  dashSheet.getRange('B' + startRow).setValue('FREKUENSI').setFontWeight('bold').setBackground('#fef7e0');
+  idx = startRow + 1;
+  var skillsSorted = Object.keys(skillsCount).sort(function(a, b) { return skillsCount[b] - skillsCount[a]; });
+  for (var sk = 0; sk < Math.min(10, skillsSorted.length); sk++) {
+    dashSheet.getRange('A' + idx).setValue(skillsSorted[sk]);
+    dashSheet.getRange('B' + idx).setValue(skillsCount[skillsSorted[sk]]);
+    idx++;
+  }
+  var skillsEndRow = idx - 1;
+
+  // --- Pengalaman (bar chart) ---
+  startRow = skillsEndRow + 3;
+  dashSheet.getRange('A' + startRow).setValue('TAHUN PENGALAMAN').setFontWeight('bold').setBackground('#f3e8fd');
+  dashSheet.getRange('B' + startRow).setValue('JUMLAH').setFontWeight('bold').setBackground('#f3e8fd');
+  idx = startRow + 1;
+  var pengExpKeys = Object.keys(pengalamanCount).sort(function(a, b) { return parseFloat(b) - parseFloat(a); });
+  for (var pe = 0; pe < pengExpKeys.length; pe++) {
+    dashSheet.getRange('A' + idx).setValue(pengExpKeys[pe] + ' tahun');
+    dashSheet.getRange('B' + idx).setValue(pengalamanCount[pengExpKeys[pe]]);
+    idx++;
+  }
+  var pengEndRow = idx - 1;
+
+  // ============================================================
+  // BAGIAN C: BUAT CHARTS (Google Sheets Charts API)
+  // ============================================================
+
+  // Helper: dapatkan posisi data untuk chart
+  // Kita perlu hitung row indices di sheet Dashboard
+
+  // Hitung posisi data di dashboard
+  var rekomDataRowStart = 11; // baris pertama data rekomendasi
+  var rekomDataRowEnd = rekomDataRowStart + rekomKeys.length - 1;
+
+  var kotaDataRowStart = rekomEndRow + 4;
+  var kotaDataRowEnd = kotaDataRowStart + kotaSorted.length - 1;
+
+  var pendDataRowStart = kotaEndRow + 4;
+  var pendDataRowEnd = pendDataRowStart + pendSorted.length - 1;
+
+  var skillDataRowStart = pendEndRow + 4;
+  var skillDataRowEnd = skillDataRowStart + Math.min(10, skillsSorted.length) - 1;
+
+  var pengDataRowStart = skillsEndRow + 4;
+  var pengDataRowEnd = pengDataRowStart + pengExpKeys.length - 1;
+
+  // --- Chart 1: Pie Chart Rekomendasi ---
+  if (rekomKeys.length > 0) {
+    var chart1 = dashSheet.newChart()
+      .setChartType(Charts.ChartType.PIE)
+      .addRange(dashSheet.getRange('A' + rekomDataRowStart + ':B' + rekomDataRowEnd))
+      .setPosition(2, 4, 0, 0) // baris 2, kolom D
+      .setOption('title', 'Rekomendasi Kandidat')
+      .setOption('width', 400)
+      .setOption('height', 280)
+      .setOption('pieSliceText', 'percentage')
+      .setOption('legend', { position: 'right' })
+      .build();
+    dashSheet.insertChart(chart1);
+  }
+
+  // --- Chart 2: Bar Chart Kota Asal ---
+  if (kotaSorted.length > 0) {
+    var chart2 = dashSheet.newChart()
+      .setChartType(Charts.ChartType.BAR)
+      .addRange(dashSheet.getRange('A' + kotaDataRowStart + ':B' + kotaDataRowEnd))
+      .setPosition(12, 4, 0, 0)
+      .setOption('title', 'Distribusi Kota Asal')
+      .setOption('width', 400)
+      .setOption('height', Math.max(200, kotaSorted.length * 30 + 60))
+      .setOption('legend', { position: 'none' })
+      .setOption('colors', ['#34a853'])
+      .build();
+    dashSheet.insertChart(chart2);
+  }
+
+  // --- Chart 3: Pie Chart Pendidikan ---
+  if (pendSorted.length > 0) {
+    var chart3 = dashSheet.newChart()
+      .setChartType(Charts.ChartType.PIE)
+      .addRange(dashSheet.getRange('A' + pendDataRowStart + ':B' + pendDataRowEnd))
+      .setPosition(2, 8, 0, 0) // baris 2, kolom I
+      .setOption('title', 'Tingkat Pendidikan')
+      .setOption('width', 400)
+      .setOption('height', 280)
+      .setOption('pieSliceText', 'percentage')
+      .setOption('legend', { position: 'right' })
+      .build();
+    dashSheet.insertChart(chart3);
+  }
+
+  // --- Chart 4: Bar Chart Top 10 Skills ---
+  if (skillsSorted.length > 0) {
+    var chart4 = dashSheet.newChart()
+      .setChartType(Charts.ChartType.BAR)
+      .addRange(dashSheet.getRange('A' + skillDataRowStart + ':B' + skillDataRowEnd))
+      .setPosition(12, 8, 0, 0)
+      .setOption('title', 'Top 10 Skills Kandidat')
+      .setOption('width', 400)
+      .setOption('height', Math.max(200, Math.min(10, skillsSorted.length) * 30 + 60))
+      .setOption('legend', { position: 'none' })
+      .setOption('colors', ['#fbbc04'])
+      .build();
+    dashSheet.insertChart(chart4);
+  }
+
+  // --- Chart 5: Bar Chart Pengalaman ---
+  if (pengExpKeys.length > 0) {
+    var chart5 = dashSheet.newChart()
+      .setChartType(Charts.ChartType.BAR)
+      .addRange(dashSheet.getRange('A' + pengDataRowStart + ':B' + pengDataRowEnd))
+      .setPosition(24, 4, 0, 0)
+      .setOption('title', 'Distribusi Tahun Pengalaman')
+      .setOption('width', 400)
+      .setOption('height', Math.max(200, pengExpKeys.length * 30 + 60))
+      .setOption('legend', { position: 'none' })
+      .setOption('colors', ['#9334e6'])
+      .build();
+    dashSheet.insertChart(chart5);
+  }
+
+  Logger.log('Dashboard berhasil digenerate dengan 5 chart!');
   Logger.log('Total kandidat: ' + totalKandidat + ', Skor rata-rata: ' + skorRataRata);
+  Logger.log('Buka sheet "Dashboard" untuk lihat chart.');
 }
 
 // ============================================================
