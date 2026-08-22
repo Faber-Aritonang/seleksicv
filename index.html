@@ -215,11 +215,10 @@
         const DASHBOARD_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS5xYu3m-gC04ulbpiq59tu0a0dV7iOOT_FIyXLC3Ub2COcZAWC06CTOXYdFVZkcYhZ8YhG7SO2NmTw/pubhtml';
 
         // Tab pages (sesuai nomor halaman di Google Sheets)
-        // GID diambil dari URL publish: ?gid=XXXXX
         const pages = [
-            { gid: '508110392', name: 'Dashboard' },              // Tab Dashboard utama
-            { gid: '0', name: 'Peta Pencari Kerja' },            // Ganti GID sesuai tab Kandidat
-            { gid: '0', name: 'Performa Screening' }             // Ganti GID sesuai tab Hasil Screening
+            { gid: '508110392', name: 'Dashboard' },        // Tab Dashboard (Ringkasan Umum)
+            { gid: '1371382218', name: 'Kandidat' },       // Tab Kandidat (Peta Pencari Kerja)
+            { gid: '939631434', name: 'Hasil Screening' }  // Tab Hasil Screening (Performa)
         ];
 
         let currentPage = 0;
