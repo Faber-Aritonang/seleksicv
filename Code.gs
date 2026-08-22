@@ -107,6 +107,79 @@ function intakeFromGmail() {
 }
 
 // ============================================================
+// ===== 1B. INTAKE DARI FORM LAMARAN (Landing Page) =====
+// ============================================================
+
+function intakeFromForm() {
+  var config = getConfig();
+  var folder = getOrCreateDriveFolder(config.DRIVE_FOLDER_NAME);
+  var lamaranSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Lamaran Masuk');
+  if (!lamaranSheet || lamaranSheet.getLastRow() <= 1) {
+    Logger.log('Sheet "Lamaran Masuk" kosong atau belum ada.');
+    return;
+  }
+
+  var kandidatSheet = getOrCreateSheet(config.SHEET_KANDIDAT, [
+    'Tanggal Masuk', 'Nama Pengirim', 'Email Pengirim', 'Subjek',
+    'Nama File CV', 'Drive File ID', 'Status'
+  ]);
+
+  // Ambil Drive File IDs yang sudah ada di Kandidat agar tidak duplikat
+  var existingData = kandidatSheet.getDataRange().getValues();
+  var existingFileIds = {};
+  for (var e = 1; e < existingData.length; e++) {
+    var fid = existingData[e][5]; // Drive File ID
+    if (fid) existingFileIds[fid] = true;
+  }
+
+  var data = lamaranSheet.getDataRange().getValues();
+  var jumlahBaru = 0;
+
+  // Kolom sheet "Lamaran Masuk":
+  // 0=Tanggal, 1=Nama, 2=Email, 3=Telepon, 4=Posisi,
+  // 5=Cover Letter, 6=Nama File CV, 7=Drive File ID, 8=Status
+
+  for (var i = 1; i < data.length; i++) {
+    var status = (data[i][8] || '').toString();
+    var driveFileId = (data[i][7] || '').toString();
+
+    // Skip jika sudah diproses atau sudah ada di Kandidat
+    if (status === 'Diproses' || existingFileIds[driveFileId]) continue;
+
+    var tanggal = data[i][0];
+    var tanggalFormatted = '';
+    if (tanggal instanceof Date) {
+      tanggalFormatted = Utilities.formatDate(tanggal, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    } else {
+      tanggalFormatted = (tanggal || '').toString().slice(0, 10);
+    }
+
+    var nama = data[i][1] || '';
+    var email = data[i][2] || '';
+    var posisi = data[i][4] || '';
+    var namaFile = data[i][6] || '';
+
+    // Tulis ke sheet "Kandidat" dengan format yang dipahami screening pipeline
+    kandidatSheet.appendRow([
+      tanggalFormatted, nama, email, posisi,
+      namaFile, driveFileId, 'Baru'
+    ]);
+
+    // Update status di "Lamaran Masuk" agar tidak diproses ulang
+    lamaranSheet.getRange(i + 1, 9).setValue('Diproses');
+
+    existingFileIds[driveFileId] = true;
+    jumlahBaru++;
+  }
+
+  if (jumlahBaru > 0) {
+    Logger.log('intakeFromForm: ' + jumlahBaru + ' lamaran baru ditambahkan ke Kandidat.');
+  } else {
+    Logger.log('intakeFromForm: Tidak ada lamaran baru dari form.');
+  }
+}
+
+// ============================================================
 // ===== 2. EKSTRAKSI TEKS =====
 // ============================================================
 
@@ -803,6 +876,7 @@ function setupTriggers() {
 
 function runIntakeAndSubmit() {
   intakeFromGmail();
+  intakeFromForm();
   buildAndSubmitBatch();
 }
 

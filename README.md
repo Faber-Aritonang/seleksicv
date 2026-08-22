@@ -4,7 +4,7 @@
 [![Google Apps Script](https://img.shields.io/badge/Google%20Apps%20Script-orange.svg)](https://script.google.com/)
 [![Claude API](https://img.shields.io/badge/Claude%20API-purple.svg)](https://console.anthropic.com/)
 
-> Sistem otomasi rekrutmen yang mengambil CV dari Gmail, mengekstrak teks via OCR, menilai semua kandidat sekaligus lewat Claude Message Batches API, dan menghasilkan ranking + skill gap analysis + pertanyaan interview yang disesuaikan per kandidat.
+> Sistem otomasi rekrutmen yang mengambil CV dari **Gmail** maupun **form lamaran web**, mengekstrak teks via OCR, menilai semua kandidat sekaligus lewat Claude Message Batches API, dan menghasilkan ranking + skill gap analysis + pertanyaan interview yang disesuaikan per kandidat.
 
 **Stack:** Google Apps Script, Gmail, Google Drive, Google Sheets, Claude API — semua gratis kecuali token Claude (dan itu pun 50% lebih hemat karena pakai Batch API).
 
@@ -67,28 +67,39 @@ Berikut adalah tampilan dashboard screening CV yang dihasilkan otomatis:
 ## 🏗️ Arsitektur
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    ALUR SCREENING CV                        │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  📧 Email CV Masuk (Gmail, berlabel "CV-Masuk")           │
-│           ↓                                                 │
-│  📥 intakeFromGmail() — ambil PDF, simpan ke Drive          │
-│           ↓                                                 │
-│  🔍 extractPdfText() — OCR teks dari PDF                    │
-│           ↓                                                 │
-│  📤 buildAndSubmitBatch() — kirim SEMUA sebagai 1 batch     │
-│           ↓                                                 │
-│  🤖 Claude Message Batches API (async, <24 jam)             │
-│           ↓                                                 │
-│  ⏰ checkBatchStatus() — cek tiap 30 menit                  │
-│           ↓                                                 │
-│  📊 retrieveBatchResults() — tulis ranking ke Sheet          │
-│           ↓                                                 │
-│  🌐 Dashboard Live — tampilkan ke publik via GitHub Pages   │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                    ALUR SCREENING CV                                │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  📧 EMAIL (Gmail berlabel "CV-Masuk")                              │
+│           ↓                                                         │
+│  📥 intakeFromGmail() — ambil PDF, simpan ke Drive                  │
+│           ↓                                                         │
+│  🌐 FORM LAMARAN (lamaran.html → FormHandler.gs)                   │
+│           ↓                                                         │
+│  📋 intakeFromForm() — baca "Lamaran Masuk" → tulis ke "Kandidat"  │
+│           ↓                                                         │
+│  📤 buildAndSubmitBatch() — kirim SEMUA sebagai 1 batch             │
+│           ↓                                                         │
+│  🔍 extractPdfText() — OCR teks dari PDF                            │
+│           ↓                                                         │
+│  🤖 Claude Message Batches API (async, <24 jam)                     │
+│           ↓                                                         │
+│  ⏰ checkBatchStatus() — cek tiap 30 menit                          │
+│           ↓                                                         │
+│  📊 retrieveBatchResults() — tulis ranking ke Sheet                  │
+│           ↓                                                         │
+│  🌐 Dashboard Live — tampilkan ke publik via GitHub Pages           │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
+
+### Dua Pintu Masuk CV
+
+| Sumber | Fungsi | Sheet Tujuan | Keterangan |
+|---|---|---|---|
+| 📧 Gmail (label `CV-Masuk`) | `intakeFromGmail()` | `Kandidat` | CV dari email attachments |
+| 🌐 Landing Page (form lamaran) | `intakeFromForm()` | `Lamaran Masuk` → `Kandidat` | CV dari form upload web |
 
 ---
 
@@ -213,7 +224,8 @@ Pertanyaan ini sudah disesuaikan — rekruter tidak perlu menyusun dari nol.
 | Sheet | Fungsi | Siapa yang Edit |
 |---|---|---|
 | **Kriteria Penilaian** | Rubrik penilaian (kriteria + bobot + deskripsi) | Rekruter — edit sesuai kebutuhan lowongan |
-| **Kandidat** | Metadata CV yang masuk + status proses | Otomatis diisi oleh sistem |
+| **Lamaran Masuk** | Data dari form landing page (nama, email, posisi, CV) | Otomatis diisi oleh `FormHandler.gs` |
+| **Kandidat** | Metadata CV yang masuk + status proses (gabungan dari Gmail & form) | Otomatis diisi oleh `intakeFromGmail()` & `intakeFromForm()` |
 | **Hasil Screening** | Ranking kandidat + skill gap + pertanyaan interview | Otomatis diisi oleh sistem |
 | **Dashboard** | Auto-generated charts (pie, bar, metrics) | Otomatis di-generate oleh `generateDashboard()` |
 | **Analytics Data** | Data terstruktur untuk analisis (kota, pengalaman, skills) | Otomatis diisi oleh sistem |
@@ -222,7 +234,7 @@ Pertanyaan ini sudah disesuaikan — rekruter tidak perlu menyusun dari nol.
 
 | Trigger | Jadwal | Fungsi |
 |---|---|---|
-| `runIntakeAndSubmit` | Tiap hari jam 7 pagi | Ambil email baru + submit batch ke Claude |
+| `runIntakeAndSubmit` | Tiap hari jam 7 pagi | Ambil email baru + data form + submit batch ke Claude |
 | `checkBatchStatus` | Tiap 30 menit | Cek apakah batch selesai, kalau ya ambil hasilnya |
 
 ---
@@ -240,19 +252,42 @@ Pertanyaan ini sudah disesuaikan — rekruter tidak perlu menyusun dari nol.
 9. **Tunggu** jam 7 pagi (atau jalankan `runIntakeAndSubmit` manual)
 10. **Cek** sheet "Hasil Screening" + "Dashboard" 🎉
 
+> 💡 **Form Lamaran:** Untuk mengaktifkan intake via form web, tambahkan `FormHandler.gs` dan deploy sebagai Web App (lihat bagian "Landing Page Lamaran"). Data form akan otomatis terbaca oleh `intakeFromForm()`.
+
 ---
 
-## 🌐 Landing Page Lamaran
+## 🌐 Landing Page Lamaran + Integrasi Screening
 
-Sertakan **`lamaran.html`** untuk halaman lamaran profesional.
+Sertakan **`lamaran.html`** untuk halaman lamaran profesional yang **terkoneksi langsung ke pipeline screening**.
+
+### Alur Form → Screening
+
+```
+Kandidat isi form di lamaran.html
+        ↓
+FormHandler.gs menerima POST
+        ↓
+  ├─ Simpan CV ke Drive folder "CV Kandidat" ✅
+  └─ Catat metadata ke sheet "Lamaran Masuk" ✅
+        ↓
+Trigger harian: runIntakeAndSubmit()
+        ↓
+  intakeFromForm() baca "Lamaran Masuk"
+        ↓
+  Tulis ke sheet "Kandidat" (format screening) ✅
+        ↓
+  buildAndSubmitBatch() → OCR → Claude screening ✅
+        ↓
+  Hasil ke "Hasil Screening" + "Analytics Data" + "Dashboard" 🎉
+```
 
 ### Fitur Landing Page:
 - 🎨 Desain modern & responsive (mobile-friendly)
 - 📋 Form lamaran (nama, email, telepon, posisi, upload CV)
 - 🎯 Pilihan posisi dengan card interaktif
-- 📱 File upload dengan validasi PDF
+- 📱 File upload dengan validasi PDF (maks 5MB)
 - ✅ Success modal setelah kirim
-- 🔗 Integrasi dengan Google Sheets (otomatis)
+- 🔗 Integrasi otomatis dengan screening pipeline
 
 ### Cara Deploy:
 
@@ -277,6 +312,8 @@ Sertakan **`lamaran.html`** untuk halaman lamaran profesional.
    ```
 
 4. **Push ke GitHub** → Landing page langsung live!
+
+> 💡 **Tidak perlu konfigurasi tambahan** — `intakeFromForm()` akan otomatis membaca data dari sheet `Lamaran Masuk` setiap kali trigger `runIntakeAndSubmit()` berjalan (jam 7 pagi).
 
 ### Demo Landing Page:
 
@@ -345,6 +382,8 @@ Data real-time dari Code.gs
 | `checkBatchStatus` selalu bilang belum selesai | Normal kalau baru beberapa menit | Batch bisa sampai <24 jam, biasanya lebih cepat untuk jumlah kandidat kecil |
 | Hasil skor aneh/tidak masuk akal | Deskripsi kriteria terlalu umum | Edit sheet "Kriteria Penilaian" — deskripsi yang lebih spesifik menghasilkan penilaian yang lebih tajam |
 | Status kandidat terjdi "Menunggu Batch" terus | Batch submit gagal tapi status sudah terlanjur diupdate | Kode sudah di-fix: status akan di-rollback ke "Baru" kalau batch gagal submit |
+| Form lamaran tidak masuk ke screening | `FORM_SUBMIT_URL` belum diisi di `lamaran.html` | Ganti placeholder dengan URL Web App yang sudah di-deploy |
+| Data form duplikat di Kandidat | `intakeFromForm()` sudah punya anti-duplikat (cek Drive File ID) | Tidak perlu khawatir, aman dijalankan berkali-kali |
 
 ## 🛡️ Prinsip Etis yang Sudah Ditanam di Prompt
 
@@ -374,6 +413,7 @@ Prompt penilaian secara eksplisit menginstruksikan Claude untuk **mengabaikan na
 | **v1.3** | 2026-08-22 | Fix bug kritis & chart positioning |
 | **v1.4** | 2026-08-22 | Live dashboard via GitHub Pages |
 | **v1.5** | 2026-08-22 | Landing page lamaran profesional (PT Angin Senyap) |
+| **v1.6** | 2026-08-22 | Integrasi form lamaran → pipeline screening via `intakeFromForm()` |
 
 ---
 
