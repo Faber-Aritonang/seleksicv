@@ -1,16 +1,34 @@
-# Screening CV Otomatis — Panduan Deployment
+# 📊 Screening CV Otomatis
 
-Sistem otomasi rekrutmen yang mengambil CV dari Gmail, mengekstrak teks via OCR, menilai semua kandidat sekaligus lewat Claude Message Batches API, dan menghasilkan ranking + skill gap analysis + pertanyaan interview yang disesuaikan per kandidat.
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Google Apps Script](https://img.shields.io/badge/Google%20Apps%20Script-orange.svg)](https://script.google.com/)
+[![Claude API](https://img.shields.io/badge/Claude%20API-purple.svg)](https://console.anthropic.com/)
+
+> Sistem otomasi rekrutmen yang mengambil CV dari Gmail, mengekstrak teks via OCR, menilai semua kandidat sekaligus lewat Claude Message Batches API, dan menghasilkan ranking + skill gap analysis + pertanyaan interview yang disesuaikan per kandidat.
 
 **Stack:** Google Apps Script, Gmail, Google Drive, Google Sheets, Claude API — semua gratis kecuali token Claude (dan itu pun 50% lebih hemat karena pakai Batch API).
 
 ---
 
-## Dashboard Preview
+## 🚀 Live Demo
+
+**Klik di bawah untuk melihat dashboard langsung:**
+
+[![Live Demo](https://img.shields.io/badge/LIVE%20DEMO-Click%20Here-brightgreen?style=for-the-badge&logo=google&logoColor=white)](https://faber-aritonang.github.io/seleksicv/)
+
+| Tab | Deskripsi |
+|---|---|
+| 📊 **Ringkasan Umum** | Dashboard utama — total kandidat, skor rata-rata, rekomendasi, kota asal, pendidikan, skills, pengalaman |
+| 🗺️ **Peta Pencari Kerja** | Data lengkap kandidat — nama, email, kota, pendidikan, pengalaman, skills |
+| 📈 **Performa Screening** | Hasil screening — skor, kekuatan, kekhawatiran, rekomendasi, skill gap, pertanyaan interview |
+
+> ✅ **Real-time** — Data di-update langsung dari Google Sheets setiap kali ada screening baru.
+
+---
+
+## 📸 Preview Dashboard
 
 Berikut adalah tampilan dashboard screening CV yang dihasilkan otomatis:
-
-### 📊 Dashboard Ringkasan
 
 ![Dashboard Ringkasan](docs/images/dashboard-ringkasan.png)
 
@@ -24,32 +42,51 @@ Berikut adalah tampilan dashboard screening CV yang dihasilkan otomatis:
 
 > 📸 **Screenshot:** Jalankan `generateDashboard()` di Apps Script, lalu ambil screenshot dari tab "Dashboard" di Google Sheets.
 
-### 🌐 Live Dashboard
-
-Dashboard juga bisa diakses secara **live** melalui GitHub Pages:
-
-🔗 **Live URL:** https://faber-aritonang.github.io/seleksicv/
-
-Untuk mengaktifkan live dashboard, lihat [Panduan GitHub Pages](#panduan-github-pages) di bawah.
+> 🌐 **Live:** [Lihat Dashboard Live](https://faber-aritonang.github.io/seleksicv/)
 
 ---
 
-## Arsitektur
+## ⚡ Fitur Utama
+
+| Fitur | Deskripsi |
+|---|---|
+| 📧 **Gmail Intake** | Ambil email CV dari Gmail berlabel "CV-Masuk" otomatis |
+| 🔍 **OCR Otomatis** | Ekstrak teks dari PDF via Google Drive OCR |
+| 🤖 **Claude Batch API** | Kirim semua CV sekaligus untuk dinilai AI (50% lebih hemat) |
+| 📊 **Ranking Kandidat** | Hasil screening terurut skor tertinggi ke terendah |
+| 🔎 **Skill Gap Analysis** | Analisis keahlian vs kriteria per kandidat |
+| 💬 **Pertanyaan Interview** | 3-5 pertanyaan spesifik per kandidat |
+| 🚫 **Anti-Bias** | Prompt instruksikan AI abaikan nama/usia/gender/agama |
+| ⏰ **Trigger Otomatis** | Harian jam 7 pagi + cek batch tiap 30 menit |
+| 📈 **Dashboard Live** | Real-time dashboard via GitHub Pages |
+| 📱 **Telegram Notif** | Notifikasi otomatis saat screening selesai (opsional) |
+
+---
+
+## 🏗️ Arsitektur
+
 ```
-Email lamaran masuk (Gmail, berlabel "CV-Masuk")
-              ↓
-     intakeFromGmail() — ambil lampiran PDF, simpan ke Drive, catat ke Sheet
-              ↓
-     buildAndSubmitBatch() — OCR tiap PDF, susun prompt penilaian,
-                              kirim SEMUA sekaligus sebagai 1 batch
-              ↓
-     Claude Message Batches API (diproses async, <24 jam, 50% lebih hemat)
-              ↓
-     checkBatchStatus() — jalan tiap 30 menit, cek apakah sudah selesai
-              ↓
-     retrieveBatchResults() — ambil hasil, urutkan skor, tulis ke Sheet
-              ↓
-     Sheet "Hasil Screening" — ranking kandidat siap direview manual
+┌─────────────────────────────────────────────────────────────┐
+│                    ALUR SCREENING CV                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  📧 Email CV Masuk (Gmail, berlabel "CV-Masuk")           │
+│           ↓                                                 │
+│  📥 intakeFromGmail() — ambil PDF, simpan ke Drive          │
+│           ↓                                                 │
+│  🔍 extractPdfText() — OCR teks dari PDF                    │
+│           ↓                                                 │
+│  📤 buildAndSubmitBatch() — kirim SEMUA sebagai 1 batch     │
+│           ↓                                                 │
+│  🤖 Claude Message Batches API (async, <24 jam)             │
+│           ↓                                                 │
+│  ⏰ checkBatchStatus() — cek tiap 30 menit                  │
+│           ↓                                                 │
+│  📊 retrieveBatchResults() — tulis ranking ke Sheet          │
+│           ↓                                                 │
+│  🌐 Dashboard Live — tampilkan ke publik via GitHub Pages   │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -170,20 +207,37 @@ Pertanyaan ini sudah disesuaikan — rekruter tidak perlu menyusun dari nol.
 
 ---
 
-## Sheet yang Aktif
+## 📋 Sheet yang Aktif
 
 | Sheet | Fungsi | Siapa yang Edit |
 |---|---|---|
-| Kriteria Penilaian | Rubrik penilaian (kriteria + bobot + deskripsi) | Rekruter — edit sesuai kebutuhan lowongan |
-| Kandidat | Metadata CV yang masuk + status proses | Otomatis diisi oleh sistem |
-| Hasil Screening | Ranking kandidat + skill gap + pertanyaan interview | Otomatis diisi oleh sistem |
+| **Kriteria Penilaian** | Rubrik penilaian (kriteria + bobot + deskripsi) | Rekruter — edit sesuai kebutuhan lowongan |
+| **Kandidat** | Metadata CV yang masuk + status proses | Otomatis diisi oleh sistem |
+| **Hasil Screening** | Ranking kandidat + skill gap + pertanyaan interview | Otomatis diisi oleh sistem |
+| **Dashboard** | Auto-generated charts (pie, bar, metrics) | Otomatis di-generate oleh `generateDashboard()` |
+| **Analytics Data** | Data terstruktur untuk analisis (kota, pengalaman, skills) | Otomatis diisi oleh sistem |
 
-## Trigger yang Jalan
+## ⏰ Trigger yang Jalan
 
 | Trigger | Jadwal | Fungsi |
 |---|---|---|
 | `runIntakeAndSubmit` | Tiap hari jam 7 pagi | Ambil email baru + submit batch ke Claude |
 | `checkBatchStatus` | Tiap 30 menit | Cek apakah batch selesai, kalau ya ambil hasilnya |
+
+---
+
+## 🚀 Quick Start (5 Menit)
+
+1. **Buat Google Sheet** baru → **Extensions > Apps Script**
+2. **Paste** isi `Code.gs` → **Ctrl+S**
+3. **Aktifkan Drive API** (Services > Drive API > Add)
+4. **Isi Script Properties**: `CLAUDE_API_KEY`
+5. **Jalankan** `testSetup` → pastikan semua ✅
+6. **Isi sheet** "Kriteria Penilaian" (total bobot = 100%)
+7. **Pasang trigger**: jalankan `setupTriggers`
+8. **Kirim email CV** ke diri sendiri → label **CV-Masuk**
+9. **Tunggu** jam 7 pagi (atau jalankan `runIntakeAndSubmit` manual)
+10. **Cek** sheet "Hasil Screening" + "Dashboard" 🎉
 
 ---
 
@@ -247,9 +301,41 @@ Data real-time dari Code.gs
 | Hasil skor aneh/tidak masuk akal | Deskripsi kriteria terlalu umum | Edit sheet "Kriteria Penilaian" — deskripsi yang lebih spesifik menghasilkan penilaian yang lebih tajam |
 | Status kandidat terjdi "Menunggu Batch" terus | Batch submit gagal tapi status sudah terlanjur diupdate | Kode sudah di-fix: status akan di-rollback ke "Baru" kalau batch gagal submit |
 
-## Prinsip Etis yang Sudah Ditanam di Prompt
+## 🛡️ Prinsip Etis yang Sudah Ditanam di Prompt
 
 Prompt penilaian secara eksplisit menginstruksikan Claude untuk **mengabaikan nama, usia, gender, foto, status pernikahan, agama** — hanya menilai berdasarkan kualifikasi kerja. Ini mengurangi risiko bias, tapi tetap disarankan sesekali audit manual: bandingkan beberapa hasil skor dengan penilaian rekruter manusia untuk memastikan konsisten.
+
+---
+
+## 🔗 Link Penting
+
+| Link | Deskripsi |
+|---|---|
+| 🌐 **[Live Demo](https://faber-aritonang.github.io/seleksicv/)** | Dashboard screening CV live |
+| 📂 **[GitHub Repository](https://github.com/Faber-Aritonang/seleksicv)** | Source code lengkap |
+| 📄 **[MIT License](LICENSE)** | Open source, bebas dipakai |
+| 🤖 **[Claude API](https://console.anthropic.com/)** | Dapatkan API key |
+| 📊 **[Google Sheets](https://sheets.google.com)** | Dashboard & data screening |
+
+---
+
+## 📝 Changelog
+
+| Versi | Tanggal | Deskripsi |
+|---|---|---|
+| **v1.0** | 2026-08-21 | Initial release — Gmail intake + Claude Batch API |
+| **v1.1** | 2026-08-22 | Tambahan dashboard analytics untuk Looker Studio |
+| **v1.2** | 2026-08-22 | Auto-generate dashboard charts di Google Sheets |
+| **v1.3** | 2026-08-22 | Fix bug kritis & chart positioning |
+| **v1.4** | 2026-08-22 | Live dashboard via GitHub Pages |
+
+---
+
+<p align="center">
+  Made with ❤️ by <a href="https://github.com/Faber-Aritonang">Faber Aritonang</a>
+  <br>
+  Powered by <a href="https://www.anthropic.com/">Claude AI</a> & <a href="https://script.google.com/">Google Apps Script</a>
+</p>
 
 ---
 
