@@ -67,39 +67,46 @@ Berikut adalah tampilan dashboard screening CV yang dihasilkan otomatis:
 ## 🏗️ Arsitektur
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                    ALUR SCREENING CV                                │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  📧 EMAIL (Gmail berlabel "CV-Masuk")                              │
-│           ↓                                                         │
-│  📥 intakeFromGmail() — ambil PDF, simpan ke Drive                  │
-│           ↓                                                         │
-│  🌐 FORM LAMARAN (lamaran.html → FormHandler.gs)                   │
-│           ↓                                                         │
-│  📋 intakeFromForm() — baca "Lamaran Masuk" → tulis ke "Kandidat"  │
-│           ↓                                                         │
-│  📤 buildAndSubmitBatch() — kirim SEMUA sebagai 1 batch             │
-│           ↓                                                         │
-│  🔍 extractPdfText() — OCR teks dari PDF                            │
-│           ↓                                                         │
-│  🤖 Claude Message Batches API (async, <24 jam)                     │
-│           ↓                                                         │
-│  ⏰ checkBatchStatus() — cek tiap 30 menit                          │
-│           ↓                                                         │
-│  📊 retrieveBatchResults() — tulis ranking ke Sheet                  │
-│           ↓                                                         │
-│  🌐 Dashboard Live — tampilkan ke publik via GitHub Pages           │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    ALUR SCREENING CV                                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌──────────────────────┐    ┌──────────────────────────────────────┐   │
+│  │ 📧 EMAIL             │    │ 🌐 LANDING PAGE                      │   │
+│  │ Gmail berlabel       │    │ lamaran.html → FormHandler.gs         │   │
+│  │ "CV-Masuk"           │    │                                       │   │
+│  └──────────┬───────────┘    └──────────────┬───────────────────────┘   │
+│             ↓                               ↓                           │
+│  intakeFromGmail()              intakeFromForm()                        │
+│  ambil PDF, simpan ke           baca "Lamaran Masuk"                    │
+│  Drive + tulis ke               → tulis ke                              │
+│  sheet "Kandidat"              sheet "Kandidat"                         │
+│             │                               │                           │
+│             └───────────┬───────────────────┘                           │
+│                         ↓                                               │
+│  📤 buildAndSubmitBatch() — kirim SEMUA sebagai 1 batch                 │
+│                         ↓                                               │
+│  🔍 extractPdfText() — OCR teks dari PDF                                │
+│                         ↓                                               │
+│  🤖 Claude Message Batches API (async, <24 jam)                         │
+│                         ↓                                               │
+│  ⏰ checkBatchStatus() — cek tiap 30 menit                              │
+│                         ↓                                               │
+│  📊 retrieveBatchResults() — tulis ranking ke Sheet                      │
+│                         ↓                                               │
+│  🌐 Dashboard Live — tampilkan ke publik via GitHub Pages               │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Dua Pintu Masuk CV
+### Dua Pintu Masuk CV (Paralel)
 
-| Sumber | Fungsi | Sheet Tujuan | Keterangan |
+| Sumber | Fungsi | Sheet Tujuan | Trigger |
 |---|---|---|---|
-| 📧 Gmail (label `CV-Masuk`) | `intakeFromGmail()` | `Kandidat` | CV dari email attachments |
-| 🌐 Landing Page (form lamaran) | `intakeFromForm()` | `Lamaran Masuk` → `Kandidat` | CV dari form upload web |
+| 📧 Gmail (label `CV-Masuk`) | `intakeFromGmail()` | `Kandidat` | Trigger jam 7 pagi |
+| 🌐 Landing Page (form lamaran) | `intakeFromForm()` | `Lamaran Masuk` → `Kandidat` | Trigger jam 7 pagi |
+
+> Kedua sumber **converge** ke sheet `Kandidat` → lalu diproses bersama oleh `buildAndSubmitBatch()` → Claude screening → hasil ke `Hasil Screening` + `Dashboard`.
 
 ---
 
