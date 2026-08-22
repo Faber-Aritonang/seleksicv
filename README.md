@@ -60,6 +60,7 @@ Berikut adalah tampilan dashboard screening CV yang dihasilkan otomatis:
 | ⏰ **Trigger Otomatis** | Harian jam 7 pagi + cek batch tiap 30 menit |
 | 📈 **Dashboard Live** | Real-time dashboard via GitHub Pages |
 | 📱 **Telegram Notif** | Notifikasi otomatis saat screening selesai (opsional) |
+| 🌐 **Landing Page Lamaran** | Halaman web profesional untuk kandidat melamar |
 
 ---
 
@@ -241,6 +242,50 @@ Pertanyaan ini sudah disesuaikan — rekruter tidak perlu menyusun dari nol.
 
 ---
 
+## 🌐 Landing Page Lamaran
+
+Sertakan **`lamaran.html`** untuk halaman lamaran profesional.
+
+### Fitur Landing Page:
+- 🎨 Desain modern & responsive (mobile-friendly)
+- 📋 Form lamaran (nama, email, telepon, posisi, upload CV)
+- 🎯 Pilihan posisi dengan card interaktif
+- 📱 File upload dengan validasi PDF
+- ✅ Success modal setelah kirim
+- 🔗 Integrasi dengan Google Sheets (otomatis)
+
+### Cara Deploy:
+
+1. **Copy `lamaran.html`** ke GitHub Pages:
+   ```bash
+   cp lamaran.html docs/
+   git add docs/lamaran.html
+   git commit -m "feat: tambah landing page lamaran"
+   git push
+   ```
+
+2. **Deploy `FormHandler.gs`** ke Apps Script:
+   - Buka Google Sheet → Extensions → Apps Script
+   - Buat file baru: `FormHandler.gs`
+   - Paste isi `FormHandler.gs`
+   - Deploy → New Deployment → Web App → Deploy
+   - Copy URL yang dihasilkan
+
+3. **Update `lamaran.html`** → ganti `FORM_SUBMIT_URL`:
+   ```javascript
+   const FORM_SUBMIT_URL = 'https://script.google.com/macros/s/xxx/exec';
+   ```
+
+4. **Push ke GitHub** → Landing page langsung live!
+
+### Demo Landing Page:
+
+🔗 [Lihat Landing Page](https://faber-aritonang.github.io/seleksicv/lamaran.html)
+
+---
+
+---
+
 ## Panduan GitHub Pages
 
 ### Aktifkan GitHub Pages
@@ -328,6 +373,7 @@ Prompt penilaian secara eksplisit menginstruksikan Claude untuk **mengabaikan na
 | **v1.2** | 2026-08-22 | Auto-generate dashboard charts di Google Sheets |
 | **v1.3** | 2026-08-22 | Fix bug kritis & chart positioning |
 | **v1.4** | 2026-08-22 | Live dashboard via GitHub Pages |
+| **v1.5** | 2026-08-22 | Landing page lamaran profesional (PT Angin Senyap) |
 
 ---
 

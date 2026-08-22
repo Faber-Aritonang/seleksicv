@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PT Angin Senyap — Karir</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #3b82f6;
+            --secondary: #0f172a;
+            --accent: #10b981;
+            --accent-dark: #059669;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+            --shadow-lg: 0 4px 20px rgba(0,0,0,0.1);
+            --radius: 12px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ===== NAVBAR ===== */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 40px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 1000;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text);
+        }
+
+        .navbar-logo {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            font-weight: 800;
+        }
+
+        .navbar-title {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .navbar-subtitle {
+            font-size: 12px;
+            color: var(--text-light);
+            font-weight: 400;
+        }
+
+        .navbar-nav {
+            display: flex;
+            gap: 8px;
+        }
+
+        .navbar-nav a {
+            text-decoration: none;
+            color: var(--text-light);
+            font-weight: 500;
+            font-size: 14px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .navbar-nav a:hover {
+            color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .navbar-nav a.btn-primary {
+            background: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .navbar-nav a.btn-primary:hover {
+            background: var(--primary-dark);
+            color: white;
+        }
+
+        /* ===== HERO ===== */
+        .hero {
+            margin-top: 70px;
+            padding: 80px 40px 60px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1e40af 100%);
+            color: white;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(59,130,246,0.3) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -10%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(16,185,129,0.2) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .hero-content {
+            max-width: 700px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 24px;
+            backdrop-filter: blur(8px);
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(90deg, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 32px;
+            line-height: 1.7;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-white {
+            background: white;
+            color: var(--primary-dark);
+        }
+
+        .btn-white:hover {
+            background: #f1f5f9;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .btn-outline:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 48px;
+            margin-top: 48px;
+            padding-top: 32px;
+            border-top: 1px solid rgba(255,255,255,0.15);
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: rgba(255,255,255,0.6);
+            margin-top: 4px;
+        }
+
+        /* ===== POSITIONS ===== */
+        .section {
+            padding: 80px 40px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .section-header h2 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .section-header p {
+            color: var(--text-light);
+            font-size: 16px;
+        }
+
+        .positions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .position-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .position-card:hover {
+            border-color: var(--primary-light);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+        }
+
+        .position-card.selected {
+            border-color: var(--primary);
+            background: #eff6ff;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+
+        .position-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+
+        .position-card h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .position-card p {
+            color: var(--text-light);
+            font-size: 14px;
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+
+        .position-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .position-tag {
+            background: #f1f5f9;
+            color: var(--text-light);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .position-card.selected .position-tag {
+            background: #dbeafe;
+            color: var(--primary);
+        }
+
+        /* ===== FORM ===== */
+        .form-section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 48px;
+            max-width: 680px;
+            margin: 0 auto;
+            box-shadow: var(--shadow);
+        }
+
+        .form-section h2 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .form-section > p {
+            color: var(--text-light);
+            margin-bottom: 32px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .form-group label .required {
+            color: #ef4444;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--text);
+            background: white;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .file-upload {
+            border: 2px dashed var(--border);
+            border-radius: 10px;
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #fafbfc;
+        }
+
+        .file-upload:hover {
+            border-color: var(--primary-light);
+            background: #eff6ff;
+        }
+
+        .file-upload.has-file {
+            border-color: var(--accent);
+            background: #ecfdf5;
+        }
+
+        .file-upload-icon {
+            font-size: 36px;
+            margin-bottom: 8px;
+        }
+
+        .file-upload-text {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .file-upload-text strong {
+            color: var(--primary);
+        }
+
+        .file-upload-hint {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+
+        .file-upload input[type="file"] {
+            display: none;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(37,99,235,0.3);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* ===== BENEFITS ===== */
+        .benefits {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            margin-top: 48px;
+        }
+
+        .benefit-card {
+            text-align: center;
+            padding: 32px 24px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+
+        .benefit-icon {
+            font-size: 40px;
+            margin-bottom: 16px;
+        }
+
+        .benefit-card h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .benefit-card p {
+            font-size: 14px;
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            background: var(--secondary);
+            color: rgba(255,255,255,0.6);
+            text-align: center;
+            padding: 40px;
+            font-size: 14px;
+        }
+
+        .footer a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            color: white;
+        }
+
+        /* ===== SUCCESS MODAL ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 16px;
+            padding: 48px;
+            max-width: 440px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            animation: modalIn 0.3s ease;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .modal h3 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .modal p {
+            color: var(--text-light);
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .modal button {
+            padding: 12px 32px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* ===== LOADING ===== */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 0 20px;
+            }
+            .navbar-nav {
+                gap: 4px;
+            }
+            .navbar-nav a {
+                padding: 6px 10px;
+                font-size: 13px;
+            }
+            .hero {
+                padding: 60px 20px 40px;
+            }
+            .hero h1 {
+                font-size: 32px;
+            }
+            .hero p {
+                font-size: 16px;
+            }
+            .hero-stats {
+                gap: 24px;
+                flex-wrap: wrap;
+            }
+            .section {
+                padding: 48px 20px;
+            }
+            .form-section {
+                padding: 32px 24px;
+            }
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <a href="#" class="navbar-brand">
+            <div class="navbar-logo">AS</div>
+            <div>
+                <div class="navbar-title">PT Angin Senyap</div>
+                <div class="navbar-subtitle">We're Hiring</div>
+            </div>
+        </a>
+        <div class="navbar-nav">
+            <a href="#positions">Lowongan</a>
+            <a href="#form" class="btn-primary">Lamar Sekarang</a>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">🚀 Sedang Buka Lowongan</div>
+            <h1>Bangun Masa Depan<br>Bersama <span>Angin Senyap</span></h1>
+            <p>Kami mencari talenta terbaik untuk bergabung di tim kami. Kirim lamaranmu sekarang dan mulai perjalanan karir yang luar biasa.</p>
+            <div class="hero-buttons">
+                <a href="#form" class="btn btn-white">📄 Lamar Sekarang</a>
+                <a href="#positions" class="btn btn-outline">Lihat Lowongan</a>
+            </div>
+            <div class="hero-stats">
+                <div class="stat">
+                    <div class="stat-number">50+</div>
+                    <div class="stat-label">Karyawan</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">5</div>
+                    <div class="stat-label">Divisi</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">Remote Friendly</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- POSITIONS -->
+    <section class="section" id="positions">
+        <div class="section-header">
+            <h2>💼 Lowongan Tersedia</h2>
+            <p>Pilih posisi yang sesuai dengan minat dan keahlianmu</p>
+        </div>
+        <div class="positions-grid">
+            <div class="position-card" onclick="selectPosition(this, 'Data Analyst')">
+                <div class="position-icon">📊</div>
+                <h3>Data Analyst</h3>
+                <p>Analisis data untuk mendukung pengambilan keputusan bisnis strategis perusahaan.</p>
+                <div class="position-tags">
+                    <span class="position-tag">SQL</span>
+                    <span class="position-tag">Python</span>
+                    <span class="position-tag">Tableau</span>
+                </div>
+            </div>
+            <div class="position-card" onclick="selectPosition(this, 'Frontend Developer')">
+                <div class="position-icon">🎨</div>
+                <h3>Frontend Developer</h3>
+                <p>Develop antarmuka web yang menarik dan responsif untuk produk digital perusahaan.</p>
+                <div class="position-tags">
+                    <span class="position-tag">React</span>
+                    <span class="position-tag">TypeScript</span>
+                    <span class="position-tag">Tailwind</span>
+                </div>
+            </div>
+            <div class="position-card" onclick="selectPosition(this, 'Backend Developer')">
+                <div class="position-icon">⚙️</div>
+                <h3>Backend Developer</h3>
+                <p>Build dan maintain sistem backend yang scalable dan reliable.</p>
+                <div class="position-tags">
+                    <span class="position-tag">Node.js</span>
+                    <span class="position-tag">PostgreSQL</span>
+                    <span class="position-tag">Docker</span>
+                </div>
+            </div>
+            <div class="position-card" onclick="selectPosition(this, 'UI/UX Designer')">
+                <div class="position-icon">✏️</div>
+                <h3>UI/UX Designer</h3>
+                <p>Desain pengalaman pengguna yang intuitif dan visually appealing.</p>
+                <div class="position-tags">
+                    <span class="position-tag">Figma</span>
+                    <span class="position-tag">Prototyping</span>
+                    <span class="position-tag">User Research</span>
+                </div>
+            </div>
+            <div class="position-card" onclick="selectPosition(this, 'Project Manager')">
+                <div class="position-icon">📋</div>
+                <h3>Project Manager</h3>
+                <p>Kelola proyek dari awal hingga selesai, pastikan delivery tepat waktu.</p>
+                <div class="position-tags">
+                    <span class="position-tag">Agile</span>
+                    <span class="position-tag">Scrum</span>
+                    <span class="position-tag">Leadership</span>
+                </div>
+            </div>
+            <div class="position-card" onclick="selectPosition(this, 'DevOps Engineer')">
+                <div class="position-icon">🚀</div>
+                <h3>DevOps Engineer</h3>
+                <p>Optimasi infrastruktur dan pipeline CI/CD untuk deployment yang cepat dan aman.</p>
+                <div class="position-tags">
+                    <span class="position-tag">AWS</span>
+                    <span class="position-tag">Kubernetes</span>
+                    <span class="position-tag">Terraform</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- BENEFITS -->
+    <section class="section" style="padding-top: 0;">
+        <div class="section-header">
+            <h2>✨ Kenapa Bergabung?</h2>
+            <p>Benefit yang kami tawarkan untuk tim kami</p>
+        </div>
+        <div class="benefits">
+            <div class="benefit-card">
+                <div class="benefit-icon">💰</div>
+                <h3>Gaji Kompetitif</h3>
+                <p>Gaji di atas pasar + bonus kinerja tiap quarter.</p>
+            </div>
+            <div class="benefit-card">
+                <div class="benefit-icon">🏠</div>
+                <h3>Remote Friendly</h3>
+                <p>Bekerja dari mana saja. Kami percaya hasil, bukan lokasi.</p>
+            </div>
+            <div class="benefit-card">
+                <div class="benefit-icon">📚</div>
+                <h3>Learning Budget</h3>
+                <p>Budget tahunan untuk kursus, conference, dan sertifikasi.</p>
+            </div>
+            <div class="benefit-card">
+                <div class="benefit-icon">🏥</div>
+                <h3>Asuransi Kesehatan</h3>
+                <p>Asuransi kesehatan lengkap untuk kamu dan keluarga.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FORM -->
+    <section class="section" id="form" style="padding-top: 0;">
+        <div class="form-section">
+            <h2>📄 Form Lamaran</h2>
+            <p>Isi data diri kamu dan upload CV. Proses screening otomatis oleh AI.</p>
+
+            <form id="applicationForm" onsubmit="handleSubmit(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nama Lengkap <span class="required">*</span></label>
+                        <input type="text" name="nama" required placeholder="Masukkan nama lengkap">
+                    </div>
+                    <div class="form-group">
+                        <label>Email <span class="required">*</span></label>
+                        <input type="email" name="email" required placeholder="email@contoh.com">
+                    </div>
+                    <div class="form-group">
+                        <label>No. Telepon</label>
+                        <input type="tel" name="telepon" placeholder="08xxxxxxxxxx">
+                    </div>
+                    <div class="form-group">
+                        <label>Posisi <span class="required">*</span></label>
+                        <select name="posisi" id="posisiSelect" required>
+                            <option value="">— Pilih Posisi —</option>
+                            <option value="Data Analyst">Data Analyst</option>
+                            <option value="Frontend Developer">Frontend Developer</option>
+                            <option value="Backend Developer">Backend Developer</option>
+                            <option value="UI/UX Designer">UI/UX Designer</option>
+                            <option value="Project Manager">Project Manager</option>
+                            <option value="DevOps Engineer">DevOps Engineer</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Upload CV <span class="required">*</span></label>
+                        <div class="file-upload" id="fileUpload" onclick="document.getElementById('cvFile').click()">
+                            <div class="file-upload-icon">📎</div>
+                            <div class="file-upload-text" id="fileText">
+                                <strong>Klik untuk upload</strong> atau drag & drop file
+                            </div>
+                            <div class="file-upload-hint">Format: PDF (Maks. 5MB)</div>
+                            <input type="file" id="cvFile" name="cv" accept=".pdf" required onchange="handleFileSelect(event)">
+                        </div>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Cover Letter (Opsional)</label>
+                        <textarea name="cover_letter" placeholder="Ceritakan kenapa kamu tertarik dengan posisi ini..."></textarea>
+                    </div>
+                </div>
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    Kirim Lamaran →
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <p>© 2026 <strong style="color:white;">PT Angin Senyap</strong>. All rights reserved.</p>
+        <p style="margin-top:8px;">Powered by <a href="https://github.com/Faber-Aritonang/seleksicv" target="_blank">Screening CV Otomatis</a> 🤖</p>
+    </footer>
+
+    <!-- SUCCESS MODAL -->
+    <div class="modal-overlay" id="successModal">
+        <div class="modal">
+            <div class="modal-icon">🎉</div>
+            <h3>Lamaran Berhasil Dikirim!</h3>
+            <p>Terima kasih telah melamar di PT Angin Senyap. Tim HR kami akan menghubungi Anda melalui email jika lolos seleksi.</p>
+            <button onclick="closeModal()">Tutup</button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // GANTI URL INI DENGAN GOOGLE APPS SCRIPT WEB APP URL KAMU
+        // ============================================================
+        // Cara mendapatkan URL:
+        // 1. Buka Apps Script → Deploy → New Deployment
+        // 2. Type: Web App
+        // 3. Execute as: Me
+        // 4. Who has access: Anyone
+        // 5. Klik Deploy → Copy URL
+        // ============================================================
+
+        const FORM_SUBMIT_URL = 'PASTE_GOOGLE_APPS_SCRIPT_WEB_APP_URL_DI_SINI';
+
+        // ===== SELECT POSITION =====
+        function selectPosition(card, posisi) {
+            // Remove selection from all cards
+            document.querySelectorAll('.position-card').forEach(function(c) {
+                c.classList.remove('selected');
+            });
+            // Add selection to clicked card
+            card.classList.add('selected');
+            // Update select dropdown
+            document.getElementById('posisiSelect').value = posisi;
+            // Scroll to form
+            document.getElementById('form').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ===== FILE SELECT =====
+        function handleFileSelect(event) {
+            var file = event.target.files[0];
+            var upload = document.getElementById('fileUpload');
+            var text = document.getElementById('fileText');
+
+            if (file) {
+                upload.classList.add('has-file');
+                text.innerHTML = '✅ <strong>' + file.name + '</strong> (' + (file.size / 1024 / 1024).toFixed(2) + ' MB)';
+            } else {
+                upload.classList.remove('has-file');
+                text.innerHTML = '<strong>Klik untuk upload</strong> atau drag & drop file';
+            }
+        }
+
+        // ===== SUBMIT FORM =====
+        function handleSubmit(event) {
+            event.preventDefault();
+
+            var submitBtn = document.getElementById('submitBtn');
+            var form = document.getElementById('applicationForm');
+            var formData = new FormData(form);
+
+            // Validation
+            if (!formData.get('nama') || !formData.get('email') || !formData.get('posisi') || !formData.get('cv')) {
+                alert('Mohon isi semua field yang wajib diisi.');
+                return;
+            }
+
+            // Check file size (5MB max)
+            var file = formData.get('cv');
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Ukuran file maksimal 5MB.');
+                return;
+            }
+
+            // Check file type
+            if (file.type !== 'application/pdf') {
+                alert('Hanya file PDF yang diterima.');
+                return;
+            }
+
+            // Show loading
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner"></span> Mengirim lamaran...';
+
+            // If no URL configured, show demo success
+            if (FORM_SUBMIT_URL === 'PASTE_GOOGLE_APPS_SCRIPT_WEB_APP_URL_DI_SINI') {
+                setTimeout(function() {
+                    form.reset();
+                    document.getElementById('fileUpload').classList.remove('has-file');
+                    document.getElementById('fileText').innerHTML = '<strong>Klik untuk upload</strong> atau drag & drop file';
+                    document.getElementById('posisiSelect').value = '';
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Kirim Lamaran →';
+                    document.querySelectorAll('.position-card').forEach(function(c) {
+                        c.classList.remove('selected');
+                    });
+                    document.getElementById('successModal').classList.add('show');
+                }, 1500);
+                return;
+            }
+
+            // Submit to Google Apps Script
+            fetch(FORM_SUBMIT_URL, {
+                method: 'POST',
+                body: formData
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.status === 'success') {
+                    form.reset();
+                    document.getElementById('fileUpload').classList.remove('has-file');
+                    document.getElementById('fileText').innerHTML = '<strong>Klik untuk upload</strong> atau drag & drop file';
+                    document.getElementById('posisiSelect').value = '';
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Kirim Lamaran →';
+                    document.querySelectorAll('.position-card').forEach(function(c) {
+                        c.classList.remove('selected');
+                    });
+                    document.getElementById('successModal').classList.add('show');
+                } else {
+                    alert('Gagal mengirim lamaran: ' + (data.message || 'Error'));
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Kirim Lamaran →';
+                }
+            })
+            .catch(function(error) {
+                alert('Terjadi error: ' + error.message);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Kirim Lamaran →';
+            });
+        }
+
+        // ===== CLOSE MODAL =====
+        function closeModal() {
+            document.getElementById('successModal').classList.remove('show');
+        }
+
+        // Close modal on overlay click
+        document.getElementById('successModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        // ===== SMOOTH SCROLL =====
+        document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                var target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
