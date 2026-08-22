@@ -24,6 +24,14 @@ Berikut adalah tampilan dashboard screening CV yang dihasilkan otomatis:
 
 > 📸 **Screenshot:** Jalankan `generateDashboard()` di Apps Script, lalu ambil screenshot dari tab "Dashboard" di Google Sheets.
 
+### 🌐 Live Dashboard
+
+Dashboard juga bisa diakses secara **live** melalui GitHub Pages:
+
+🔗 **Live URL:** https://faber-aritonang.github.io/seleksicv/
+
+Untuk mengaktifkan live dashboard, lihat [Panduan GitHub Pages](#panduan-github-pages) di bawah.
+
 ---
 
 ## Arsitektur
@@ -176,6 +184,55 @@ Pertanyaan ini sudah disesuaikan — rekruter tidak perlu menyusun dari nol.
 |---|---|---|
 | `runIntakeAndSubmit` | Tiap hari jam 7 pagi | Ambil email baru + submit batch ke Claude |
 | `checkBatchStatus` | Tiap 30 menit | Cek apakah batch selesai, kalau ya ambil hasilnya |
+
+---
+
+## Panduan GitHub Pages
+
+### Aktifkan GitHub Pages
+
+1. Buka repository: https://github.com/Faber-Aritonang/seleksicv
+2. Klik tab **"Settings"**
+3. Scroll ke section **"Pages"** (sidebar kiri)
+4. Source: pilih **"Deploy from a branch"**
+5. Branch: pilih **"main"**
+6. Folder: pilih **"/ (root)"**
+7. Klik **Save**
+8. Tunggu 1-2 menit → dashboard live di: https://faber-aritonang.github.io/seleksicv/
+
+### Publish Google Sheet ke Web
+
+Agar dashboard tampil di GitHub Pages, Google Sheet harus dipublish:
+
+1. Buka Google Sheet → tab **"Dashboard"**
+2. Klik **File → Share → Publish to web**
+3. Pilih tab **"Dashboard"**
+4. Klik **Publish** → konfirmasi
+5. Copy URL yang dihasilkan
+6. Edit file **`index.html`** → ganti value `DASHBOARD_SHEET_URL`:
+
+```javascript
+const DASHBOARD_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX.../pubhtml?gid=0';
+```
+
+7. Push ke GitHub:
+```bash
+git add index.html
+git commit -m "feat: aktifkan live dashboard"
+git push
+```
+
+### Cara Kerja
+
+```
+GitHub Pages (index.html)
+       ↓
+Embed Google Sheets (iframe)
+       ↓
+Google Sheet "Dashboard" (publish to web)
+       ↓
+Data real-time dari Code.gs
+```
 
 ---
 

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Screening CV Otomatis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+            border-bottom: 1px solid #334155;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header .badge {
+            background: #10b981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Tab Navigation */
+        .tabs {
+            display: flex;
+            gap: 0;
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+            padding: 0 40px;
+        }
+
+        .tab {
+            padding: 14px 24px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            color: #94a3b8;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: #e2e8f0;
+            background: #334155;
+        }
+
+        .tab.active {
+            color: #60a5fa;
+            border-bottom-color: #60a5fa;
+        }
+
+        /* Dashboard Container */
+        .dashboard {
+            padding: 20px 40px;
+            min-height: calc(100vh - 130px);
+        }
+
+        .dashboard-frame {
+            width: 100%;
+            height: calc(100vh - 180px);
+            border: 1px solid #334155;
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .dashboard-frame iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Info Section */
+        .info {
+            margin-top: 20px;
+            padding: 16px 20px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .info span {
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        .info a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+
+        .info a:hover {
+            text-decoration: underline;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: calc(100vh - 180px);
+            color: #94a3b8;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #334155;
+            border-top-color: #60a5fa;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                padding: 16px 20px;
+            }
+            .header h1 {
+                font-size: 18px;
+            }
+            .tabs {
+                padding: 0 20px;
+                overflow-x: auto;
+            }
+            .tab {
+                padding: 12px 16px;
+                font-size: 13px;
+                white-space: nowrap;
+            }
+            .dashboard {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="header">
+        <h1>📊 Dashboard Screening CV Otomatis</h1>
+        <span class="badge">● LIVE</span>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab(0)">Ringkasan Umum</div>
+        <div class="tab" onclick="switchTab(1)">Peta Pencari Kerja</div>
+        <div class="tab" onclick="switchTab(2)">Performa Screening</div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard">
+        <div class="dashboard-frame" id="frameContainer">
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Memuat dashboard...</p>
+            </div>
+            <iframe id="dashboardFrame" style="display:none;" allowfullscreen></iframe>
+        </div>
+
+        <div class="info">
+            <span>🔄 Data di-refresh otomatis dari Google Sheets setiap kali halaman dibuka</span>
+            <span>🔗 <a href="https://github.com/Faber-Aritonang/seleksicv" target="_blank">View Source on GitHub</a></span>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // GANTI URL INI DENGAN GOOGLE SHEETS PUBLISH URL KAMU
+        // ============================================================
+        // Cara mendapatkan URL:
+        // 1. Buka Google Sheet
+        // 2. File → Share → Publish to web
+        // 3. Pilih tab "Dashboard"
+        // 4. Copy URL yang dihasilkan
+        // 5. Paste di bawah ini
+        // ============================================================
+
+        const DASHBOARD_SHEET_URL = 'PASTE_GOOGLE_SHEETS_PUBLISH_URL_DI_SINI';
+
+        // Tab pages (sesuai nomor halaman di Google Sheets)
+        const pages = [
+            { gid: '0', name: 'Ringkasan Umum' },        // Ganti GID sesuai tab pertama
+            { gid: '0', name: 'Peta Pencari Kerja' },    // Ganti GID sesuai tab kedua
+            { gid: '0', name: 'Performa Screening' }     // Ganti GID sesuai tab ketiga
+        ];
+
+        let currentPage = 0;
+
+        function switchTab(index) {
+            currentPage = index;
+
+            // Update tab UI
+            document.querySelectorAll('.tab').forEach((tab, i) => {
+                tab.classList.toggle('active', i === index);
+            });
+
+            // Load iframe
+            loadDashboard(index);
+        }
+
+        function loadDashboard(pageIndex) {
+            const frame = document.getElementById('dashboardFrame');
+            const loading = document.getElementById('loading');
+
+            if (DASHBOARD_SHEET_URL === 'PASTE_GOOGLE_SHEETS_PUBLISH_URL_DI_SINI') {
+                loading.innerHTML = `
+                    <div style="text-align:center; max-width:500px;">
+                        <p style="font-size:18px; margin-bottom:16px;">⚠️ Dashboard belum dikonfigurasi</p>
+                        <p style="color:#94a3b8; line-height:1.6;">
+                            Ikuti langkah ini:<br><br>
+                            1. Buka Google Sheet → tab "Dashboard"<br>
+                            2. <strong>File → Share → Publish to web</strong><br>
+                            3. Pilih tab "Dashboard" → Klik <strong>Publish</strong><br>
+                            4. Copy URL yang dihasilkan<br>
+                            5. Edit file <code>index.html</code> → ganti URL di variabel <code>DASHBOARD_SHEET_URL</code>
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            loading.style.display = 'none';
+            frame.style.display = 'block';
+
+            const gid = pages[pageIndex].gid;
+            frame.src = DASHBOARD_SHEET_URL.replace('/pubhtml', '/pub')
+                + (gid ? '&gid=' + gid : '');
+        }
+
+        // Load pertama kali
+        loadDashboard(0);
+    </script>
+
+</body>
+</html>
