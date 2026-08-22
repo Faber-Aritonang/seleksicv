@@ -6,6 +6,26 @@ Sistem otomasi rekrutmen yang mengambil CV dari Gmail, mengekstrak teks via OCR,
 
 ---
 
+## Dashboard Preview
+
+Berikut adalah tampilan dashboard screening CV yang dihasilkan otomatis:
+
+### 📊 Dashboard Ringkasan
+
+![Dashboard Ringkasan](docs/images/dashboard-ringkasan.png)
+
+**Fitur dashboard:**
+- Total Kandidat, Skor Rata-rata, Skor Tertinggi/Terendah
+- Pie Chart Rekomendasi (Lanjut / Pertimbangkan / Tidak Sesuai)
+- Bar Chart Distribusi Kota Asal
+- Pie Chart Tingkat Pendidikan
+- Bar Chart Top 10 Skills
+- Bar Chart Distribusi Tahun Pengalaman
+
+> 📸 **Screenshot:** Jalankan `generateDashboard()` di Apps Script, lalu ambil screenshot dari tab "Dashboard" di Google Sheets.
+
+---
+
 ## Arsitektur
 ```
 Email lamaran masuk (Gmail, berlabel "CV-Masuk")
@@ -173,3 +193,25 @@ Pertanyaan ini sudah disesuaikan — rekruter tidak perlu menyusun dari nol.
 ## Prinsip Etis yang Sudah Ditanam di Prompt
 
 Prompt penilaian secara eksplisit menginstruksikan Claude untuk **mengabaikan nama, usia, gender, foto, status pernikahan, agama** — hanya menilai berdasarkan kualifikasi kerja. Ini mengurangi risiko bias, tapi tetap disarankan sesekali audit manual: bandingkan beberapa hasil skor dengan penilaian rekruter manusia untuk memastikan konsisten.
+
+---
+
+## 📸 Menambahkan Screenshot Dashboard
+
+Untuk menambahkan screenshot dashboard ke repository:
+
+1. **Jalankan `generateDashboard()`** di Apps Script
+2. **Buka Google Sheet** → tab "Dashboard"
+3. **Ambil screenshot** (PrtSc / Snipping Tool / Cmd+Shift+4)
+4. **Simpan** ke folder `docs/images/` dengan nama:
+   - `dashboard-ringkasan.png`
+   - `dashboard-pencari-kerja.png`
+   - `dashboard-performa.png`
+5. **Push ke GitHub:**
+   ```bash
+   git add docs/images/
+   git commit -m "docs: tambah screenshot dashboard"
+   git push
+   ```
+
+Screenshot akan otomatis muncul di README.md bagian "Dashboard Preview".
