@@ -12,7 +12,7 @@ function getConfig() {
     CLAUDE_API_KEY: props.getProperty('CLAUDE_API_KEY'),
     TELEGRAM_BOT_TOKEN: props.getProperty('TELEGRAM_BOT_TOKEN'),
     TELEGRAM_CHAT_ID: props.getProperty('TELEGRAM_CHAT_ID'),
-    CLAUDE_MODEL: 'claude-sonnet-4-6',
+    CLAUDE_MODEL: 'claude-haiku-4-5',
     GMAIL_LABEL_MASUK: 'CV-Masuk',
     GMAIL_LABEL_SELESAI: 'CV-Diproses',
     DRIVE_FOLDER_NAME: 'CV Kandidat',
