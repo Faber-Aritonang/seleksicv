@@ -492,7 +492,11 @@ function retrieveBatchResults(resultsUrl) {
   Logger.log(analyticsBaru.length + ' data analytics ditambahkan.');
 
   // Auto-generate dashboard setelah ambil hasil
-  generateDashboard();
+  try {
+    generateDashboard();
+  } catch (dashErr) {
+    Logger.log('Dashboard generate error (non-fatal): ' + dashErr.message);
+  }
 
   return true;
 }
@@ -676,12 +680,15 @@ function generateDashboard() {
   var pengDataRowStart = skillsEndRow + 4;
   var pengDataRowEnd = pengDataRowStart + pengExpKeys.length - 1;
 
+  // Hitung posisi chart secara dinamis (setelah semua data table)
+  var chartRow = pengEndRow + 3;
+
   // --- Chart 1: Pie Chart Rekomendasi ---
   if (rekomKeys.length > 0) {
     var chart1 = dashSheet.newChart()
       .setChartType(Charts.ChartType.PIE)
       .addRange(dashSheet.getRange('A' + rekomDataRowStart + ':B' + rekomDataRowEnd))
-      .setPosition(2, 4, 0, 0) // baris 2, kolom D
+      .setPosition(chartRow, 4, 0, 0)
       .setOption('title', 'Rekomendasi Kandidat')
       .setOption('width', 400)
       .setOption('height', 280)
@@ -691,27 +698,12 @@ function generateDashboard() {
     dashSheet.insertChart(chart1);
   }
 
-  // --- Chart 2: Bar Chart Kota Asal ---
-  if (kotaSorted.length > 0) {
-    var chart2 = dashSheet.newChart()
-      .setChartType(Charts.ChartType.BAR)
-      .addRange(dashSheet.getRange('A' + kotaDataRowStart + ':B' + kotaDataRowEnd))
-      .setPosition(12, 4, 0, 0)
-      .setOption('title', 'Distribusi Kota Asal')
-      .setOption('width', 400)
-      .setOption('height', Math.max(200, kotaSorted.length * 30 + 60))
-      .setOption('legend', { position: 'none' })
-      .setOption('colors', ['#34a853'])
-      .build();
-    dashSheet.insertChart(chart2);
-  }
-
-  // --- Chart 3: Pie Chart Pendidikan ---
+  // --- Chart 2: Pie Chart Pendidikan ---
   if (pendSorted.length > 0) {
     var chart3 = dashSheet.newChart()
       .setChartType(Charts.ChartType.PIE)
       .addRange(dashSheet.getRange('A' + pendDataRowStart + ':B' + pendDataRowEnd))
-      .setPosition(2, 8, 0, 0) // baris 2, kolom I
+      .setPosition(chartRow, 8, 0, 0)
       .setOption('title', 'Tingkat Pendidikan')
       .setOption('width', 400)
       .setOption('height', 280)
@@ -721,12 +713,28 @@ function generateDashboard() {
     dashSheet.insertChart(chart3);
   }
 
+  // --- Chart 3: Bar Chart Kota Asal ---
+  var chartRow2 = chartRow + 16;
+  if (kotaSorted.length > 0) {
+    var chart2 = dashSheet.newChart()
+      .setChartType(Charts.ChartType.BAR)
+      .addRange(dashSheet.getRange('A' + kotaDataRowStart + ':B' + kotaDataRowEnd))
+      .setPosition(chartRow2, 4, 0, 0)
+      .setOption('title', 'Distribusi Kota Asal')
+      .setOption('width', 400)
+      .setOption('height', Math.max(200, kotaSorted.length * 30 + 60))
+      .setOption('legend', { position: 'none' })
+      .setOption('colors', ['#34a853'])
+      .build();
+    dashSheet.insertChart(chart2);
+  }
+
   // --- Chart 4: Bar Chart Top 10 Skills ---
   if (skillsSorted.length > 0) {
     var chart4 = dashSheet.newChart()
       .setChartType(Charts.ChartType.BAR)
       .addRange(dashSheet.getRange('A' + skillDataRowStart + ':B' + skillDataRowEnd))
-      .setPosition(12, 8, 0, 0)
+      .setPosition(chartRow2, 8, 0, 0)
       .setOption('title', 'Top 10 Skills Kandidat')
       .setOption('width', 400)
       .setOption('height', Math.max(200, Math.min(10, skillsSorted.length) * 30 + 60))
@@ -737,11 +745,12 @@ function generateDashboard() {
   }
 
   // --- Chart 5: Bar Chart Pengalaman ---
+  var chartRow3 = chartRow2 + Math.max(8, kotaSorted.length, skillsSorted.length) + 2;
   if (pengExpKeys.length > 0) {
     var chart5 = dashSheet.newChart()
       .setChartType(Charts.ChartType.BAR)
       .addRange(dashSheet.getRange('A' + pengDataRowStart + ':B' + pengDataRowEnd))
-      .setPosition(24, 4, 0, 0)
+      .setPosition(chartRow3, 4, 0, 0)
       .setOption('title', 'Distribusi Tahun Pengalaman')
       .setOption('width', 400)
       .setOption('height', Math.max(200, pengExpKeys.length * 30 + 60))
